@@ -4,7 +4,7 @@ date: 2026-10-15
 datePrecision: day
 type: resource
 summary: HOS-Ocean and HOS-NWT are open-source solvers based on the High-Order Spectral method, developed at École Centrale de Nantes for simulating nonlinear waves in the open ocean and in wave basins. This post describes their method, applications and installation.
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: Several undulating irregular wave lines beside the word HOS-Ocean

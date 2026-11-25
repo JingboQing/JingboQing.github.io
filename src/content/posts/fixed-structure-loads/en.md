@@ -4,7 +4,7 @@ date: 2026-01-01
 datePrecision: month
 type: research
 summary: Real-time identification of the wave-load time history on fixed structures of arbitrary shape from the surface records at a few points around them, validated in a wave flume with models of three different shapes.
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.jpg
 coverCaption: "The model in the wave flume, with wave gauges around it."

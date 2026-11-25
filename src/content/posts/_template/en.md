@@ -5,7 +5,7 @@ date: 2026-01-01          # 日期，年-月-日
 type: news                # 分类：research、news、resource
 summary: "One or two sentences shown in the list."
 draft: true               # 写好后改成 false 才会发布
-pinned: false
+inOverview: false         # 与中文版保持一致
 # cover: ./cover.jpg      # 封面与中文版共用同一个文件夹里的图片
 # coverAlt: Description of the cover image
 # coverCaption: Caption

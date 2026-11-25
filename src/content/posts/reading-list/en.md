@@ -4,7 +4,7 @@ date: 2026-03-12
 datePrecision: day
 type: resource
 summary: Standard references for research on wave loads and wave–structure interaction, grouped into wave theory, wave loads on structures, random waves and design, and mathematical methods, with a note on the scope of each.
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: A row of upright book spines beside the words Reading list

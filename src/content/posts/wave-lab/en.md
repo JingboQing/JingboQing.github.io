@@ -4,7 +4,7 @@ date: 2026-11-13
 datePrecision: day
 type: resource
 summary: "Browser demonstrations of regular, irregular and Stokes waves and of diffraction by a cylinder: adjust the parameters and observe the free surface, the particle motion beneath it, the spectrum, the wave-height statistics, the effect of nonlinearity and the force on the cylinder."
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.svg
 coverAlt: The Greek letter η above a wave curve

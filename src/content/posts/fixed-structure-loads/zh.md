@@ -4,7 +4,7 @@ date: 2026-01-01
 datePrecision: month
 type: research
 summary: 以结构周围少数测点的波面记录为输入，实时识别任意形状固定结构所受的波浪荷载时程，并在水槽中用三种不同形状的模型完成验证。
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.jpg
 coverCaption: "水槽试验中的模型与周围布置的浪高仪。"

@@ -4,7 +4,7 @@ date: 2026-02-01
 datePrecision: month
 type: research
 summary: Real-time identification of the wave-load time history on a floating structure from the surface elevation at a few points along its waterline and from its own motion, validated in a wave flume with a moving cylinder model.
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.jpg
 coverCaption: "Boundary conditions and coordinate systems for a floating structure"

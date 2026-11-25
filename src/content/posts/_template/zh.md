@@ -5,7 +5,7 @@ date: 2026-01-01          # 日期，年-月-日
 type: news                # 分类：research 研究工作、news 学术动态、resource 分享
 summary: "一两句话的摘要，显示在列表里。"
 draft: true               # 写好后改成 false 才会发布
-pinned: false             # 改成 true 会在首页优先显示
+inOverview: false         # 改成 true 会显示在概览页的“研究与动态”里
 # cover: ./cover.jpg      # 封面：把图片放进本文件夹，再去掉这三行开头的 #
 # coverAlt: 封面图的文字说明
 # coverCaption: 图注

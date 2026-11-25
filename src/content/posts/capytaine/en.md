@@ -4,7 +4,7 @@ date: 2026-09-10
 datePrecision: day
 type: resource
 summary: Capytaine is an open-source Python boundary element solver for the linear interaction between water waves and floating bodies in the frequency domain. This post describes its development and capabilities, and verifies its results against the analytical solution for diffraction by a cylinder.
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: A panelled cylinder mesh and a wave line beside the word Capytaine

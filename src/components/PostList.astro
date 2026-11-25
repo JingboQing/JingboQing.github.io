@@ -3,8 +3,9 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import { categories } from '../lib/categories';
 import { path, text, dateLabel, typeLabel, postURL, paperFor, type Lang } from '../lib/site';
-interface Props { entries: CollectionEntry<'posts'>[]; lang: Lang; filters?: boolean; }
-const { entries, lang, filters = true } = Astro.props;
+// badges: mark the posts that are also on the overview; off on the overview itself, where every entry is one.
+interface Props { entries: CollectionEntry<'posts'>[]; lang: Lang; filters?: boolean; badges?: boolean; }
+const { entries, lang, filters = true, badges = true } = Astro.props;
 const papers = await getCollection('publications');
 const filterTypes = ['all', ...categories.map(c => c.id).filter(type => entries.some(p => p.data.type === type))];
 ---
@@ -23,7 +24,7 @@ const filterTypes = ['all', ...categories.map(c => c.id).filter(type => entries.
           <Image src={post.data.cover} alt="" widths={[480, 960]} sizes="(max-width: 480px) 100vw, 240px" loading="lazy" />
         </a>}
         <div class="post-copy">
-          <div class="post-meta"><span class="post-type">{typeLabel(post.data.type, lang)}</span><span class="meta-dot" aria-hidden="true">·</span>{journal && <><span class="post-journal">{journal}</span><span class="meta-dot" aria-hidden="true">·</span></>}<time datetime={post.data.datePrecision === 'year' ? String(post.data.date.getUTCFullYear()) : post.data.date.toISOString().slice(0, 10)}>{dateLabel(post, lang)}</time>{post.data.pinned && <span class="pinned">{text(lang, '精选', 'Selected')}</span>}</div>
+          <div class="post-meta"><span class="post-type">{typeLabel(post.data.type, lang)}</span><span class="meta-dot" aria-hidden="true">·</span>{journal && <><span class="post-journal">{journal}</span><span class="meta-dot" aria-hidden="true">·</span></>}<time datetime={post.data.datePrecision === 'year' ? String(post.data.date.getUTCFullYear()) : post.data.date.toISOString().slice(0, 10)}>{dateLabel(post, lang)}</time>{badges && post.data.inOverview && <span class="pinned">{text(lang, '精选', 'Selected')}</span>}</div>
           <h3><a href={path(postURL(post))}>{post.data.title}</a></h3>
           <p>{post.data.summary}</p>
           <a href={path(postURL(post))} class="text-link">{text(lang, '查看详情', 'Explore this work')} <span aria-hidden="true">→</span></a>

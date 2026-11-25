@@ -4,7 +4,7 @@ date: 2026-03-12
 datePrecision: day
 type: resource
 summary: 研究波浪荷载与波浪–结构相互作用的常用参考书，按波浪理论、结构波浪荷载、随机波浪与设计、数学方法分为四类，并说明各书的适用范围。
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: 一排竖立的书脊，旁边写着 Reading list

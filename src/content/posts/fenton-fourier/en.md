@@ -4,7 +4,7 @@ date: 2026-06-18
 datePrecision: day
 type: resource
 summary: John Fenton's Fourier program solves steady nonlinear waves numerically by means of Fourier series and remains applicable to waves close to breaking; the same package provides fifth-order Stokes and cnoidal programs for cross-checking. This post describes their method, input and output, and ranges of validity, with an example.
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: A nonlinear wave profile with sharp crests and flat troughs over a sine curve, beside the word Fourier

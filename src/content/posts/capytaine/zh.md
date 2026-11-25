@@ -4,7 +4,7 @@ date: 2026-09-10
 datePrecision: day
 type: resource
 summary: Capytaine 是一款开源的 Python 边界元求解器，用于在频域中计算波浪与浮体的线性相互作用。本文介绍其发展历程和主要功能，并以圆柱绕射的解析解复核其计算结果。
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: 划分为面元的圆柱网格与波浪线，旁边写着 Capytaine

@@ -27,7 +27,8 @@ const posts = defineCollection({
     title: z.string(), date: z.coerce.date(),
     datePrecision: z.enum(['day', 'month', 'year']).default('day'),
     type: z.enum(categoryIds), summary: z.string(),
-    pinned: z.boolean().default(false), draft: z.boolean().default(false),
+    // true: shown in the overview's research & updates list (set it in both zh.md and en.md); false: only on the updates page.
+    inOverview: z.boolean().default(false), draft: z.boolean().default(false),
     cover: image().optional(), coverAlt: z.string().optional(), coverCaption: z.string().optional(),
     // false: the cover appears only in lists, not at the top of the post page.
     coverOnPage: z.boolean().default(true),

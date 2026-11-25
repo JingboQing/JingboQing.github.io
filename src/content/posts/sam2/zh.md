@@ -4,7 +4,7 @@ date: 2026-04-23
 datePrecision: day
 type: resource
 summary: SAM 2 是 Meta 开源的图像与视频分割模型，在单帧图像上给出提示后，可将目标的分割结果传播至整段视频。我们在波浪荷载识别试验中采用该模型从相机图像中提取水线。
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: 圆柱露出水面的部分被填色标出，下边缘是一条起伏的水线，旁边写着 SAM 2

@@ -4,7 +4,7 @@ date: 2026-06-18
 datePrecision: day
 type: resource
 summary: John Fenton 编写的 Fourier 程序采用傅里叶级数数值求解稳态非线性波，适用于接近破碎的大波；同一程序包还提供五阶 Stokes 波和椭圆余弦波程序，可用于相互校核。本文介绍其方法、输入输出与适用范围，并给出算例。
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: 一条波峰尖、波谷平的非线性波浪曲线，下面衬着正弦曲线，旁边写着 Fourier

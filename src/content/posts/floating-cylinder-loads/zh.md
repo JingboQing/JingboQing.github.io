@@ -4,7 +4,7 @@ date: 2026-02-01
 datePrecision: month
 type: research
 summary: 以浮体水线上少数测点的波面和结构自身的运动为输入，实时识别浮式结构所受的波浪荷载时程，在水槽中用运动的圆柱模型进行验证。
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.jpg
 coverCaption: "浮式结构的边界条件与坐标系示意"

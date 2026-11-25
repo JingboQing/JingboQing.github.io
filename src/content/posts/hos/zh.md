@@ -4,7 +4,7 @@ date: 2026-10-15
 datePrecision: day
 type: resource
 summary: HOS-Ocean 和 HOS-NWT 是法国南特中央理工学院开源的高阶谱方法程序，分别用于模拟开阔海域和波浪水池中的非线性波浪。本文介绍其原理、适用范围和安装方法。
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: 几条起伏的不规则波浪线，旁边写着 HOS-Ocean

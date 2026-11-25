@@ -4,7 +4,7 @@ date: 2026-11-13
 datePrecision: day
 type: resource
 summary: 规则波、不规则波、Stokes 波和圆柱绕射的浏览器演示：调整参数，观察波面传播、水质点运动、波浪谱、波高统计、非线性效应以及圆柱所受的波浪力。
-pinned: true
+inOverview: true
 draft: false
 cover: ./cover.svg
 coverAlt: 希腊字母 η 与一条波浪曲线

@@ -4,7 +4,7 @@ date: 2026-04-23
 datePrecision: day
 type: resource
 summary: SAM 2 is Meta's open-source model for image and video segmentation; given a prompt on a single frame, it propagates the segmentation of the target through the whole video. We used it to extract the waterline from camera images in our wave load identification experiments.
-pinned: false
+inOverview: false
 draft: false
 cover: ./cover.svg
 coverAlt: The part of a cylinder above the water filled in as a mask, its lower edge an undulating waterline, beside the words SAM 2
