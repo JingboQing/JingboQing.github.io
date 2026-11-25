@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WaveStudy from '../components/WaveStudy.astro';
+import { path } from '../lib/site';
+---
+<Layout title="卿景博 Jingbo Qing · 个人学术主页" description="卿景博 / Jingbo Qing：海洋工程、水动力学、波浪–结构相互作用与荷载识别。选择中文或 English 进入个人学术主页。" landing>
+  <div class="landing-wrap">
+    <section class="landing-main" aria-labelledby="landing-title">
+      <div class="landing-copy">
+        <div class="landing-head">
+          <p class="landing-signature"><span>个人学术主页 · <span lang="en">Academic homepage</span></span></p>
+          <h1 class="landing-title" id="landing-title"><span class="landing-title-zh">选择语言</span><span class="landing-title-en" lang="en">Choose a language</span></h1>
+        </div>
+        <div class="language-entries" aria-labelledby="landing-title">
+          <a class="language-entry" href={path('/zh/')} lang="zh-CN"><span class="entry-title">中文主页 <span aria-hidden="true">→</span></span><span class="entry-note">学术成果 · 研究与动态 · 学术履历</span></a>
+          <a class="language-entry" href={path('/en/')} lang="en"><span class="entry-title">English <span aria-hidden="true">→</span></span><span class="entry-note">Publications · Research · CV</span></a>
+        </div>
+        <div class="landing-research">
+          <p class="landing-description">波浪与结构相互作用，理解荷载与流场响应</p>
+          <p class="landing-field" lang="en">Waves, structures &amp; inverse problems</p>
+        </div>
+      </div>
+      <div class="landing-visual"><WaveStudy /></div>
+    </section>
+  </div>
+</Layout>

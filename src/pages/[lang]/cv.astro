@@ -1,0 +1,39 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { languages, text, isSelf, type Lang } from '../../lib/site';
+export function getStaticPaths() { return languages.map(lang => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const entry = await getEntry('cv', lang);
+if (!entry) throw new Error(`Missing CV for ${lang}`);
+const { Content } = await render(entry);
+// The selected journal articles are the papers with `inCV: true` in src/content/publications, newest first, so the CV
+// and the publications page never disagree. A line `<!-- 论文列表 -->` in the CV Markdown marks where they go; without
+// it they are added at the end. With no paper marked, the section is left out.
+const papers = (await getCollection('publications', ({ data }) => data.inCV)).sort((a, b) => b.data.year - a.data.year || b.id.localeCompare(a.id));
+const html = entry.rendered?.html;
+const [before, after] = html ? html.split(/<!--\s*(?:论文列表|publications)\s*-->/i).concat('').slice(0, 2) : ['', ''];
+const marker = !!html && before.length !== html.length;
+---
+<Layout lang={lang} active="cv" alternate={`/${lang === 'zh' ? 'en' : 'zh'}/cv/`} title={`${entry.data.title} · ${text(lang, '卿景博', 'Jingbo Qing')}`} description={entry.data.description}>
+  <article class="article-wrap cv-page">
+    <header class="page-intro"><h1>{entry.data.title}</h1><p>{entry.data.description}</p><button class="print-button text-link" type="button" onclick="window.print()">{text(lang, '打印 / 保存为 PDF', 'Print / Save as PDF')}</button></header>
+    <div class="prose cv-body">
+      {marker ? <Fragment set:html={before} /> : <Content />}
+      {papers.length > 0 && <>
+        <h2>{text(lang, '代表性期刊论文', 'Selected journal articles')}</h2>
+        <ol class="cv-publications">
+          {papers.map(paper => <li>
+            {paper.data.authors.map((author, i) => <>{isSelf(author) ? <strong>{author}</strong> : author}{paper.data.equalContribution.includes(author) && '†'}{i < paper.data.authors.length - 1 ? ', ' : '. '}</>)}
+            <a href={paper.data.url} target="_blank" rel="noopener noreferrer">{paper.data.title}</a>.
+            {' '}<em>{paper.data.journal}</em>{paper.data.volume && `, ${paper.data.volume}`}{paper.data.issue && `(${paper.data.issue})`}{paper.data.pages && `: ${paper.data.pages}`}, {paper.data.year}.
+            {lang === 'zh' && (paper.data.jcr || paper.data.impactFactor) && <span class="cv-journal-note">{' '}（{[paper.data.jcr ? `JCR ${paper.data.jcr}` : '', paper.data.impactFactor ? `IF ${paper.data.impactFactor}` : ''].filter(Boolean).join('，')}）</span>}
+          </li>)}
+        </ol>
+        {papers.some(paper => paper.data.equalContribution.length > 0) && <p class="equal-note">{text(lang, '† 共同第一作者', '† Equal contribution')}</p>}
+        {lang === 'zh' && papers.some(paper => paper.data.impactFactor) && <p class="equal-note">影响因子取论文发表当年的 JCR 数据；当年数据尚未公布的，取最新一年的数据。</p>}
+      </>}
+      {marker && <Fragment set:html={after} />}
+    </div>
+  </article>
+</Layout>

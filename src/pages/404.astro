@@ -1,0 +1,7 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { path } from '../lib/site';
+---
+<Layout title="页面未找到 · Page not found" description="返回卿景博个人学术主页 / Return to Jingbo Qing's academic homepage" landing>
+  <section class="not-found page-wrap"><p class="eyebrow">404</p><h1>页面未找到<br /><span lang="en">Page not found.</span></h1><p>链接可能已更新，请从主页继续浏览。</p><div class="resource-links"><a href={path('/zh/')}>中文主页 →</a><a href={path('/en/')} lang="en">English →</a></div></section>
+</Layout>

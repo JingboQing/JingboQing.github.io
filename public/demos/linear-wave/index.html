@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Linear regular waves on a uniform current: free surface, particle orbits, phase and group speed in finite depth.">
+  <title>线性规则波 · 卿景博</title>
+  <link rel="stylesheet" href="../common/katex/katex.min.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script src="../common/katex/katex.min.js"></script>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <a class="back" href="../../zh/updates/wave-lab/" data-back data-i18n="back">← 返回卿景博的学术主页</a>
+        <p class="eyebrow" data-i18n="eyebrow">线性波 · 规则波</p>
+        <h1 data-i18n="title">线性规则波</h1>
+        <p class="intro" data-i18n="intro">调整波高、周期、水深和水流，观察波面传播和水下水质点的运动。</p>
+      </div>
+      <nav class="languages" aria-label="Language"><a href="?lang=zh" data-language="zh">中文</a><a href="?lang=en" data-language="en">English</a></nav>
+    </header>
+
+    <section class="controls" data-i18n-label="parameters">
+      <div><label for="height"><span><span data-i18n="height">波高</span> <span data-tex="H"></span></span><output id="height-output" for="height"></output></label><input id="height" type="range" min="0.05" max="1.5" step="0.05" value="0.5"></div>
+      <div><label for="period"><span><span data-i18n="period">周期</span> <span data-tex="T"></span></span><output id="period-output" for="period"></output></label><input id="period" type="range" min="2" max="12" step="0.1" value="6"></div>
+      <div><label for="depth"><span><span data-i18n="depth">水深</span> <span data-tex="h"></span></span><output id="depth-output" for="depth"></output></label><input id="depth" type="range"></div>
+      <div><label for="current"><span><span data-i18n="current">流速</span> <span data-tex="U"></span></span><output id="current-output" for="current"></output></label><input id="current" type="range" min="-1.5" max="1.5" step="0.05" value="0"></div>
+    </section>
+
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="fieldTitle">波面与水质点运动</h2><span class="panel-note" data-i18n="scaleNote">横轴按整数距离分档，波长变化时只在必要时换档；位移按同一比例放大</span></div>
+      <svg id="field" role="img" aria-labelledby="field-title field-desc"><title id="field-title"></title><desc id="field-desc"></desc></svg>
+      <div class="panel-foot">
+        <div class="toolbar" style="margin:0"><span id="legend"></span><span class="spacer"></span><button type="button" id="play"></button><button type="button" id="reset" data-i18n="reset">重置</button></div>
+      </div>
+    </div>
+
+    <dl class="metrics" aria-live="polite">
+      <div><dt><span data-i18n="wavelength">波长</span> <span data-tex="L"></span></dt><dd><span id="m-L"></span><small>m</small><span class="sub" id="m-L-sub"></span></dd></div>
+      <div><dt><span data-i18n="celerity">相速</span> <span data-tex="c"></span></dt><dd><span id="m-c"></span><small>m/s</small></dd></div>
+      <div><dt><span data-i18n="group">群速</span> <span data-tex="c_g"></span></dt><dd><span id="m-cg"></span><small>m/s</small></dd></div>
+      <div><dt><span data-i18n="relDepth">相对水深</span> <span data-tex="h/L"></span></dt><dd><span id="m-hL"></span><span class="sub" id="m-class"></span></dd></div>
+      <div><dt><span data-i18n="intrinsic">相对水流的周期</span> <span data-tex="T_r"></span></dt><dd><span id="m-Tr"></span><small>s</small><span class="sub" id="m-Tr-sub"></span></dd></div>
+      <div><dt><span data-i18n="steep">波陡</span> <span data-tex="H/L"></span></dt><dd><span id="m-HL"></span><span class="sub" id="m-HL-sub"></span></dd></div>
+    </dl>
+    <div class="equations">
+      <div class="row"><span data-i18n="eqDisp">色散关系</span><span class="tex" data-tex="(\omega - kU)^2 = gk\tanh(kh),\qquad \omega = 2\pi/T,\quad \sigma = \omega - kU = 2\pi/T_r"></span></div>
+      <div class="row"><span data-i18n="eqSurface">波面</span><span class="tex" data-tex="\eta(x,t) = \tfrac{H}{2}\cos(kx - \omega t)"></span></div>
+      <div class="row"><span data-i18n="eqSpeed">相速与群速</span><span class="tex" data-tex="c = \dfrac{\omega}{k},\qquad c_g = \dfrac{1}{2}\left(1 + \dfrac{2kh}{\sinh 2kh}\right)\dfrac{\sigma}{k} + U"></span></div>
+      <div class="row"><span data-i18n="eqOrbit">水质点轨迹半轴</span><span class="tex" data-tex="\dfrac{H}{2}\,\dfrac{\cosh k(z+h)}{\sinh kh},\qquad \dfrac{H}{2}\,\dfrac{\sinh k(z+h)}{\sinh kh}"></span></div>
+    </div>
+    <p class="note"><span class="validity" id="validity"></span><span data-i18n="note">Airy 线性波理论，g = 9.81 m/s²。均匀流沿 x 方向，U &gt; 0 与波同向（顺流），U &lt; 0 为逆流；周期 T 为固定点观测到的周期。</span></p>
+    <noscript><p class="note">此演示需要启用 JavaScript。This demonstration requires JavaScript.</p></noscript>
+  </main>
+  <script type="module">
+    import { setupPage, slider, playback, node, text, mathText, richText, responsive, path, fmt, label, ticks, steadySpan } from '../common/demo.js';
+    import { regularWave, depthClass, breakingSteepness, orbitAxes } from '../common/wave-core.js';
+
+    const { t } = setupPage({
+      zh: { back:'← 返回卿景博的学术主页', eyebrow:'线性波 · 规则波', title:'线性规则波', intro:'调整波高、周期、水深和水流，观察波面传播和水下水质点的运动。', parameters:'波浪参数', height:'波高', period:'周期', depth:'水深', current:'流速',
+        fieldTitle:'波面与水质点运动', scaleNote:'横轴按整数距离分档，波长变化时只在必要时换档；位移按同一比例放大', reset:'重置', pause:'暂停', play:'播放',
+        legend:'浅色椭圆是水质点轨迹，圆点是水质点当前位置；表层的点与波面一起运动。', legendCurrent:'浅色椭圆是水质点相对水流的轨迹，随水流一起漂移；橙色箭头表示水流。',
+        wavelength:'波长', celerity:'相速', group:'群速', relDepth:'相对水深', intrinsic:'相对水流的周期', steep:'波陡',
+        eqDisp:'色散关系', eqSurface:'波面', eqSpeed:'相速与群速', eqOrbit:'水质点轨迹半轴',
+        note:'Airy 线性波理论，$g = 9.81\\,\\mathrm{m/s^2}$。均匀流沿 $x$ 方向，$U > 0$ 与波同向（顺流），$U < 0$ 为逆流；周期 $T$ 为固定点观测到的周期。',
+        deep:'深水', intermediate:'过渡水深', shallow:'浅水', seabed:'海底', noCurrent:'无流时', sameAsT:'无流时等于 $T$', following:'顺流', opposing:'逆流', still:'无流',
+        breakLimit:'破碎极限 ', blocked:'逆流过强，波浪无法逆流传播（阻塞）',
+        svgTitle:'线性规则波的波面与水质点轨迹', svgDesc:'上方是向右传播的波面，下方几排椭圆是不同水深处水质点的运动轨迹，深处的轨迹变小，浅水中轨迹压扁。',
+        linear:'小振幅近似', linearTitle:'ka ≤ 0.1 且 H/h ≤ 0.1，处于小振幅范围。', caution:'超出小振幅范围', cautionTitle:'ka > 0.1 或 H/h > 0.1，非线性效应不宜忽略。', breaking:'超过破碎极限', breakingTitle:'H/L 超过 Miche 极限 0.142 tanh(kh)，实际波浪会破碎。', blockedBadge:'波浪阻塞', blockedTitle:'逆流使这个周期的波无法逆流传播。' },
+      en: { back:'← Jingbo Qing · Academic homepage', eyebrow:'Linear waves · Regular', title:'Linear regular waves', intro:'Adjust wave height, period, depth and current to see the free surface travel and the water particles move beneath it.', parameters:'Wave parameters', height:'Height', period:'Period', depth:'Depth', current:'Current',
+        fieldTitle:'Free surface and particle motion', scaleNote:'Horizontal extent changes in round steps only when needed; displacements share one exaggeration', reset:'Reset', pause:'Pause', play:'Play',
+        legend:'Light ellipses are particle orbits, dots are the particles now; the top row moves with the surface.', legendCurrent:'Light ellipses are orbits relative to the current and drift with it; orange arrows show the current.',
+        wavelength:'Wavelength', celerity:'Phase speed', group:'Group speed', relDepth:'Relative depth', intrinsic:'Period relative to current', steep:'Steepness',
+        eqDisp:'Dispersion', eqSurface:'Free surface', eqSpeed:'Phase and group speed', eqOrbit:'Orbit semi-axes',
+        note:'Airy linear wave theory, $g = 9.81\\,\\mathrm{m/s^2}$. Uniform current along $x$: $U > 0$ follows the waves, $U < 0$ opposes them; $T$ is the period seen at a fixed point.',
+        deep:'deep water', intermediate:'intermediate depth', shallow:'shallow water', seabed:'seabed', noCurrent:'without current', sameAsT:'equals $T$ without current', following:'following', opposing:'opposing', still:'no current',
+        breakLimit:'breaking limit ', blocked:'Opposing current too strong: the waves cannot travel against it (blocking)',
+        svgTitle:'Free surface and particle orbits of a linear regular wave', svgDesc:'The wave travels to the right; rows of ellipses show particle orbits at several depths, shrinking with depth and flattening in shallow water.',
+        linear:'Small amplitude', linearTitle:'ka ≤ 0.1 and H/h ≤ 0.1: within the small-amplitude range.', caution:'Beyond small amplitude', cautionTitle:'ka > 0.1 or H/h > 0.1: nonlinear effects are no longer negligible.', breaking:'Beyond breaking limit', breakingTitle:'H/L exceeds the Miche limit 0.142 tanh(kh); a real wave would break.', blockedBadge:'Wave blocking', blockedTitle:'The opposing current stops waves of this period from travelling against it.' },
+    }, 'wave-lab');
+    document.getElementById('field-title').textContent = t.svgTitle;
+    document.getElementById('field-desc').textContent = t.svgDesc;
+
+    const H = slider('height', { min: 0.05, max: 1.5, format: (v) => `${v.toFixed(2)} m`, onInput: update });
+    const T = slider('period', { min: 2, max: 12, format: (v) => `${v.toFixed(1)} s`, onInput: update });
+    const D = slider('depth', { min: 1, max: 100, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: update });
+    const U = slider('current', { min: -1.5, max: 1.5, format: (v) => (Math.abs(v) < 1e-9 ? `0 · ${t.still}` : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(2)} m/s · ${v > 0 ? t.following : t.opposing}`), onInput: update });
+    D.set(10);
+
+    const svg = document.getElementById('field');
+    const HEIGHT = 350, M = { left: 52, right: 14, top: 34, bottom: 36 };
+    const rows = [0, 0.25, 0.5, 0.75, 0.95];
+    let wave, still, geo, span, layer = {};
+    const set = (id, v) => richText(document.getElementById(id), v);
+
+    function update() {
+      wave = regularWave(H.get(), T.get(), D.get(), U.get());
+      still = regularWave(H.get(), T.get(), D.get(), 0);
+      const v = document.getElementById('validity');
+      document.getElementById('legend').textContent = Math.abs(U.get()) > 1e-9 ? t.legendCurrent : t.legend;
+      if (wave.blocked) {
+        ['m-L', 'm-c', 'm-cg', 'm-hL', 'm-Tr', 'm-HL'].forEach((id) => set(id, '—'));
+        ['m-L-sub', 'm-class', 'm-Tr-sub', 'm-HL-sub'].forEach((id) => set(id, ''));
+        v.className = 'validity caution'; v.textContent = t.blockedBadge; v.title = t.blockedTitle;
+        plot.redraw();
+        return;
+      }
+      span = steadySpan(span, wave.L, { steps: [50, 100, 200, 500] });
+      const hL = wave.h / wave.L, withCurrent = Math.abs(wave.U) > 1e-9;
+      set('m-L', fmt(wave.L, 4)); set('m-L-sub', withCurrent ? `${t.noCurrent} $L = ${fmt(still.L, 4)}$ m` : '');
+      set('m-c', fmt(wave.c, 3)); set('m-cg', fmt(wave.cg, 3));
+      set('m-hL', fmt(hL, 3)); set('m-class', `${t[depthClass(hL)]} · $kh = ${fmt(wave.kh, 3)}$`);
+      set('m-Tr', fmt(wave.Tr, 3)); set('m-Tr-sub', withCurrent ? '' : t.sameAsT);
+      set('m-HL', fmt(wave.H / wave.L, 3)); set('m-HL-sub', `${t.breakLimit}${fmt(breakingSteepness(wave.kh), 3)}`);
+      const breaking = wave.H / wave.L > breakingSteepness(wave.kh);
+      const caution = !breaking && ((wave.k * wave.H) / 2 > 0.1 || wave.H / wave.h > 0.1);
+      v.className = 'validity' + (breaking || caution ? ' caution' : '');
+      v.textContent = breaking ? t.breaking : caution ? t.caution : t.linear;
+      v.title = breaking ? t.breakingTitle : caution ? t.cautionTitle : t.linearTitle;
+      plot.redraw();
+    }
+
+    // Static layer: axes, seabed and current arrows. The surface, orbits and particles move each frame.
+    function drawStatic(w) {
+      svg.querySelector('g.root')?.remove();
+      layer = {};
+      if (!wave) return;
+      const root = node('g', { class: 'root' }, svg);
+      const pw = w - M.left - M.right, ys = M.top + 46, yb = HEIGHT - M.bottom;
+      if (wave.blocked) {
+        node('rect', { x: M.left, y: ys, width: pw, height: yb - ys, fill: '#eef3f0' }, root);
+        node('line', { x1: M.left, x2: w - M.right, y1: ys, y2: ys, stroke: '#216b68', 'stroke-width': 2 }, root);
+        text(root, M.left + pw / 2, (ys + yb) / 2, t.blocked, { 'text-anchor': 'middle', class: 'label' });
+        return;
+      }
+      const X = (x) => M.left + (x / span) * pw;
+      const Z = (z) => ys + (-z / wave.h) * (yb - ys);
+      // One exaggeration for every displacement keeps orbit shapes true; it depends on depth only, so H changes show.
+      const coth = wave.kh > 30 ? 1 : 1 / Math.tanh(wave.kh);
+      const E = 36 / (0.75 * Math.min(coth, 2.5));
+      geo = { span, ys, yb, X, Z, E };
+      const grid = node('g', {}, root);
+      ticks(span, 5).values.forEach((v) => {
+        node('line', { x1: X(v), x2: X(v), y1: M.top, y2: yb, class: 'grid' }, grid);
+        text(grid, X(v), HEIGHT - 14, label(v), { 'text-anchor': v === 0 ? 'start' : v >= span - 1e-9 ? 'end' : 'middle' });
+      });
+      // Ruler of one wavelength above the water.
+      const bx0 = X(0.02 * span), bx1 = X(0.02 * span + Math.min(wave.L, 0.96 * span)), by = 22;
+      node('path', { d: `M${bx0},${by - 4}V${by + 4}M${bx0},${by}H${bx1}M${bx1},${by - 4}V${by + 4}`, stroke: '#5a6c69', 'stroke-width': 1.2, fill: 'none' }, grid);
+      mathText(grid, (bx0 + bx1) / 2, by - 7, `$L$ = ${fmt(wave.L, 3)} m`, { 'text-anchor': 'middle', class: 'label' });
+      mathText(grid, w - M.right, HEIGHT - 1, '$x$ (m)', { 'text-anchor': 'end', class: 'label' });
+      text(grid, M.left - 8, ys + 4, '0', { 'text-anchor': 'end' });
+      text(grid, M.left - 8, Z(-wave.h / 2) + 4, `−${label(wave.h / 2)}`, { 'text-anchor': 'end' });
+      text(grid, M.left - 8, yb + 4, `−${label(wave.h)}`, { 'text-anchor': 'end' });
+      mathText(grid, 6, ys - 52, '$z$ (m)', { class: 'label' });
+      node('line', { x1: M.left, x2: M.left, y1: M.top, y2: yb, class: 'axis' }, grid);
+      layer.water = node('path', { fill: '#e6f2ee' }, root);
+      const bed = node('g', {}, root);
+      node('line', { x1: M.left, x2: w - M.right, y1: yb, y2: yb, stroke: '#9fb3ad', 'stroke-width': 1.5 }, bed);
+      for (let x = M.left; x < w - M.right; x += 9) node('line', { x1: x, x2: x - 6, y1: yb, y2: yb + 7, stroke: '#c9d3cf' }, bed);
+      text(bed, w - M.right - 4, yb - 6, t.seabed, { 'text-anchor': 'end' });
+      node('line', { x1: M.left, x2: w - M.right, y1: ys, y2: ys, stroke: '#b9cdca', 'stroke-dasharray': '4 5' }, root);
+      // Current arrows between the third and fourth rows, length proportional to |U|.
+      if (Math.abs(wave.U) > 1e-9) {
+        const arrows = node('g', { stroke: '#b0723a', 'stroke-width': 1.6, fill: '#b0723a' }, root);
+        const len = 34 * (Math.abs(wave.U) / 1.5) + 10, dir = Math.sign(wave.U), y = Z(-0.62 * wave.h);
+        [0.125, 0.375, 0.625, 0.875].forEach((f) => {
+          const x0 = M.left + f * pw - (dir * len) / 2, x1 = x0 + dir * len;
+          node('line', { x1: x0, x2: x1 - dir * 5, y1: y, y2: y }, arrows);
+          node('path', { d: `M${x1},${y}L${x1 - dir * 7},${y - 4}L${x1 - dir * 7},${y + 4}Z`, stroke: 'none' }, arrows);
+        });
+      }
+      const orbits = node('g', {}, root);
+      const pg = node('g', {}, root);
+      layer.particles = [];
+      const columns = w < 520 ? 5 : 8; // fewer orbits on phones
+      rows.forEach((r) => {
+        const z = -r * wave.h;
+        const [ax, az] = orbitAxes(wave.H / 2, wave.k, wave.h, z);
+        for (let j = 0; j < columns; j++) {
+          layer.particles.push({
+            x0: ((j + 0.5) / columns) * span, z, ax, az,
+            orbit: node('ellipse', { cy: Z(z), rx: Math.max(E * ax, 0.4), ry: Math.max(E * az, 0.4), fill: 'none', stroke: '#9cc3b9', 'stroke-width': 1 }, orbits),
+            dot: node('circle', { r: r === 0 ? 3.6 : 3.2, fill: r === 0 ? '#183846' : '#216b68' }, pg),
+          });
+        }
+      });
+      layer.surface = node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 2.2 }, root);
+      drawFrame(clock ? clock.time : 0);
+    }
+
+    function drawFrame(time) {
+      if (!layer.surface) return;
+      const { span, ys, yb, X, Z, E } = geo, a = wave.H / 2, n = 240;
+      const xs = [], yv = [];
+      for (let i = 0; i <= n; i++) {
+        const x = (i / n) * span;
+        xs.push(X(x));
+        yv.push(ys - E * a * Math.cos(wave.k * x - wave.omega * time));
+      }
+      const line = path(xs, yv);
+      layer.surface.setAttribute('d', line);
+      layer.water.setAttribute('d', `${line}L${X(span)},${yb}L${X(0)},${yb}Z`);
+      // Each particle circles its mean position, which drifts with the current; the domain wraps every two wavelengths.
+      layer.particles.forEach((p) => {
+        const xc = (((p.x0 + wave.U * time) % span) + span) % span;
+        const th = wave.k * xc - wave.omega * time;
+        p.orbit.setAttribute('cx', X(xc).toFixed(1));
+        p.dot.setAttribute('cx', (X(xc) - E * p.ax * Math.sin(th)).toFixed(1));
+        p.dot.setAttribute('cy', (Z(p.z) - E * p.az * Math.cos(th)).toFixed(1));
+      });
+    }
+
+    let clock;
+    const plot = responsive(svg, HEIGHT, drawStatic);
+    clock = playback(document.getElementById('play'), t, drawFrame);
+    document.getElementById('reset').addEventListener('click', () => { H.set(0.5); T.set(6); D.set(10); U.set(0); span = undefined; update(); clock.reset(); });
+    H.show(); T.show(); U.show();
+    update();
+  </script>
+</body>
+</html>

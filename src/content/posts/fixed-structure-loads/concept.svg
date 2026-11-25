@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440" role="img" aria-labelledby="title desc">
+  <title id="title">Free-surface observations around a fixed structure</title>
+  <desc id="desc">Conceptual line drawing of an arbitrary fixed cross-section surrounded by free-surface observation locations.</desc>
+  <defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dfede8"/><stop offset="1" stop-color="#ffffff"/></linearGradient><pattern id="hatch" width="7" height="7" patternTransform="rotate(35)" patternUnits="userSpaceOnUse"><path d="M0 0V7" stroke="#c8d3ce" stroke-width="2"/></pattern><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7" fill="none" stroke="#327c79"/></marker></defs>
+  <rect width="720" height="440" fill="#ffffff"/>
+  <path d="M44 104H676M44 220H676M44 336H676M124 48V392M360 48V392M596 48V392" stroke="#e5e8e0" stroke-width="1"/>
+  <ellipse cx="362" cy="220" rx="233" ry="133" fill="url(#sea)"/>
+  <g fill="none" stroke="#91b8b0" stroke-width="1"><ellipse cx="362" cy="220" rx="201" ry="110"/><ellipse cx="362" cy="220" rx="164" ry="89" stroke-dasharray="4 6"/><path d="M47 171Q104 141 162 171M47 207Q104 177 141 194M47 245Q104 215 141 229M47 283Q104 253 164 274M559 171Q618 141 675 171M582 207Q620 177 675 194M582 245Q620 215 675 229M560 283Q618 253 675 274"/></g>
+  <path d="M302 160C328 130 377 143 386 167L432 178C454 193 450 229 425 244L397 285C372 308 342 288 333 269L296 264C264 251 264 227 278 206L276 184Z" fill="url(#hatch)" stroke="#254b59" stroke-width="2.2"/>
+  <path d="M302 160C328 130 377 143 386 167L432 178C454 193 450 229 425 244L397 285C372 308 342 288 333 269L296 264C264 251 264 227 278 206L276 184Z" fill="#ffffff" fill-opacity=".35"/>
+  <g fill="#327c79" stroke="#ffffff" stroke-width="3"><circle cx="199" cy="189" r="6"/><circle cx="226" cy="263" r="6"/><circle cx="309" cy="316" r="6"/><circle cx="436" cy="311" r="6"/><circle cx="522" cy="249" r="6"/><circle cx="522" cy="177" r="6"/><circle cx="435" cy="121" r="6"/><circle cx="309" cy="113" r="6"/></g>
+  <g fill="none" stroke="#327c79" stroke-width="1.5" marker-end="url(#arrow)"><path d="M79 122H142"/><path d="M79 328H142"/><path d="M358 226L414 211"/></g>
+  <g font-family="Georgia,serif" font-style="italic" font-size="17" fill="#254b59"><text x="354" y="221">F</text><text x="185" y="175">η</text><text x="514" y="159">η</text></g>
+  <path d="M44 392H676" stroke="#cad4cc"/>
+</svg>

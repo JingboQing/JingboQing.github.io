@@ -1,0 +1,24 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { languages, text, path, profile, isSelf, type Lang } from '../../lib/site';
+export function getStaticPaths() { return languages.map(lang => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+const papers = (await getCollection('publications')).sort((a,b) => b.data.year - a.data.year || b.id.localeCompare(a.id));
+const years = [...new Set(papers.map(p => p.data.year))];
+const scholar = (await profile(lang)).data.scholar;
+---
+<Layout lang={lang} active="publications" alternate={`/${lang === 'zh' ? 'en' : 'zh'}/publications/`} title={text(lang, '学术成果 · 卿景博', 'Publications · Jingbo Qing')} description={text(lang, '海洋工程水动力学、波浪荷载控制与识别相关论文。', 'Publications on offshore hydrodynamics, wave load control, and identification.')}>
+  <div class="page-wrap publications-page">
+    <header class="page-intro"><h1>{text(lang, '学术成果', 'Publications')}</h1><p>{text(lang, '围绕波浪–结构相互作用、波浪荷载控制与识别开展的研究。', 'Research on wave–structure interaction, wave load control, and observation-based identification.')}</p><div class="intro-links">{scholar && <a href={scholar} target="_blank" rel="noopener noreferrer">Google Scholar ↗</a>}<a href={path(`/${lang}/updates/`)}>{text(lang, '研究工作的详细介绍', 'Explore the research')} →</a></div></header>
+    <div class="publication-summary"><span>{papers.length} {text(lang, '篇期刊论文', 'journal articles')}</span><span>{text(lang, '标题链接至出版社或 DOI', 'Titles link to the publisher or DOI')}</span></div>
+    {years.map(year => <section class="publication-year" aria-labelledby={`year-${year}`}><h2 id={`year-${year}`}>{year}</h2><ol class="publication-list">{papers.filter(p => p.data.year === year).map(paper => <li>
+      {paper.data.selected && <p class="publication-selection">{text(lang, '代表工作', 'SELECTED WORK')}</p>}
+      <h3><a href={paper.data.url} target="_blank" rel="noopener noreferrer">{paper.data.title} <span aria-hidden="true">↗</span></a></h3>
+      <p class="authors">{paper.data.authors.map((author,i) => <>{isSelf(author) ? <strong>{author}</strong> : author}{paper.data.equalContribution.includes(author) && '†'}{i < paper.data.authors.length-1 ? ', ' : '.'}</>)}{paper.data.equalContribution.length > 0 && <span class="equal-note">{text(lang, '† 共同第一作者', '† Equal contribution')}</span>}</p>
+      <p class="journal"><em>{paper.data.journal}</em>{paper.data.volume && `, ${paper.data.volume}`}{paper.data.issue && `(${paper.data.issue})`}{paper.data.pages && `: ${paper.data.pages}`} · {paper.data.year}</p>
+      {lang === 'zh' && (paper.data.jcr || paper.data.impactFactor) && <p class="journal-details">{[paper.data.jcr ? `JCR ${paper.data.jcr}` : '', paper.data.impactFactor ? `IF ${paper.data.impactFactor}` : ''].filter(Boolean).join(' · ')}</p>}
+    </li>)}</ol></section>)}
+    {lang === 'zh' && papers.some(paper => paper.data.impactFactor) && <p class="publication-note">影响因子取论文发表当年的 JCR 数据；当年数据尚未公布的，取最新一年的数据。</p>}
+  </div>
+</Layout>

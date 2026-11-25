@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Linear wave diffraction by a vertical cylinder (MacCamy–Fuchs): the free surface around the cylinder in 3D, the run-up along its wall, and the wave force compared with the Morison inertia force.">
+  <title>圆柱绕射 · 卿景博</title>
+  <link rel="stylesheet" href="../common/katex/katex.min.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script src="../common/katex/katex.min.js"></script>
+  <style>
+    .surface-canvas { display:block; width:100%; height:360px; }
+    @media(max-width:640px) { .surface-canvas { height:280px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <a class="back" href="../../zh/updates/wave-lab/" data-back data-i18n="back">← 返回卿景博的学术主页</a>
+        <p class="eyebrow" data-i18n="eyebrow">波浪与结构 · 圆柱绕射</p>
+        <h1 data-i18n="title">圆柱绕射</h1>
+        <p class="intro" data-i18n="intro">规则波遇到直立圆柱，一部分被反射和散射：迎浪面前形成驻波，圆柱背后出现遮蔽区。圆柱直径与波长相当时，波浪力明显低于 Morison 公式的估计。</p>
+      </div>
+      <nav class="languages" aria-label="Language"><a href="?lang=zh" data-language="zh">中文</a><a href="?lang=en" data-language="en">English</a></nav>
+    </header>
+
+    <section class="controls" data-i18n-label="parameters">
+      <div><label for="height"><span><span data-i18n="height">波高</span> <span data-tex="H"></span></span><output id="height-output" for="height"></output></label><input id="height" type="range" min="0.5" max="6" step="0.1" value="2"></div>
+      <div><label for="period"><span><span data-i18n="period">周期</span> <span data-tex="T"></span></span><output id="period-output" for="period"></output></label><input id="period" type="range" min="3" max="15" step="0.1" value="6"></div>
+      <div><label for="depth"><span><span data-i18n="depth">水深</span> <span data-tex="h"></span></span><output id="depth-output" for="depth"></output></label><input id="depth" type="range"></div>
+      <div><label for="diameter"><span><span data-i18n="diameter">圆柱直径</span> <span data-tex="D"></span></span><output id="diameter-output" for="diameter"></output></label><input id="diameter" type="range"></div>
+    </section>
+    <div class="toolbar">
+      <span class="toolbar-label" data-i18n="show">显示</span>
+      <button type="button" class="toggle" id="show-total" data-i18n="total">总波面</button>
+      <button type="button" class="toggle" id="show-scattered" data-i18n="scattered">散射波</button>
+      <span class="spacer"></span>
+      <button type="button" id="play"></button>
+      <button type="button" id="reset" data-i18n="reset">重置</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="surfaceTitle">圆柱周围的波面</h2><span class="panel-note" id="surface-note"></span></div>
+      <canvas id="surface" class="surface-canvas" role="img" data-i18n-label="surfaceTitle"></canvas>
+      <div class="panel-foot" data-i18n="surfaceFoot">波浪从左向右传播；颜色越浅，波面越高。</div>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="runupTitle">沿圆柱一周的波面振幅</h2></div>
+        <div class="legend"><span class="theory" data-i18n="runupLegend">圆柱表面</span><span class="reference" data-i18n="incidentLegend">入射波</span></div>
+        <svg id="runup" role="img" data-i18n-label="runupTitle"></svg>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="forceTitle">等效惯性系数</h2></div>
+        <div class="legend"><span class="theory" data-i18n="mfLegend">MacCamy–Fuchs</span><span class="reference" data-i18n="morisonLegend">Morison，$C_M = 2$</span></div>
+        <svg id="force" role="img" data-i18n-label="forceTitle"></svg>
+      </div>
+    </div>
+
+    <dl class="metrics" aria-live="polite">
+      <div><dt><span data-i18n="wavelength">波长</span> <span data-tex="L"></span></dt><dd><span id="m-L"></span><small>m</small><span class="sub" id="m-L-sub"></span></dd></div>
+      <div><dt><span data-i18n="size">相对尺度</span> <span data-tex="D/L"></span></dt><dd><span id="m-DL"></span><span class="sub" id="m-DL-sub"></span></dd></div>
+      <div><dt><span data-i18n="forceMax">波浪力幅值</span> <span data-tex="F"></span></dt><dd><span id="m-F"></span><small id="m-F-unit"></small><span class="sub" id="m-F-sub"></span></dd></div>
+      <div><dt><span data-i18n="cm">等效惯性系数</span> <span data-tex="C_{M,\mathrm{eff}}"></span></dt><dd><span id="m-cm"></span><span class="sub" id="m-cm-sub"></span></dd></div>
+      <div><dt><span data-i18n="runupMax">最大波面振幅</span> <span data-tex="|\eta|_{\max}/(H/2)"></span></dt><dd><span id="m-R"></span><span class="sub" id="m-R-sub"></span></dd></div>
+      <div><dt><span data-i18n="kc">KC 数</span> <span data-tex="\mathrm{KC}"></span></dt><dd><span id="m-KC"></span><span class="sub" id="m-KC-sub"></span></dd></div>
+    </dl>
+    <div class="equations">
+      <div class="row"><span data-i18n="eqSurface">波面</span><span class="tex" data-tex="\eta = \dfrac{H}{2}\,\mathrm{Re}\Bigl\{\sum_{m=0}^{\infty}\epsilon_m i^m\Bigl[J_m(kr) - \dfrac{J_m'(ka)}{H_m'(ka)}H_m(kr)\Bigr]\cos m\theta\; e^{-i\omega t}\Bigr\}"></span></div>
+      <div class="row"><span data-i18n="eqForce">波浪力</span><span class="tex" data-tex="F = \dfrac{2\rho g H\tanh kh}{k^2\,|H_1'(ka)|}\cos(\omega t + \delta),\quad \tan\delta = \dfrac{Y_1'(ka)}{J_1'(ka)},\quad C_{M,\mathrm{eff}} = \dfrac{4}{\pi (ka)^2\,|H_1'(ka)|}"></span></div>
+      <div class="row"><span data-i18n="eqMorison">Morison 惯性力</span><span class="tex" data-tex="F = \rho\,C_M\,\pi a^2\,\dfrac{gH}{2}\tanh kh,\qquad C_M = 2"></span></div>
+      <div class="row"><span data-i18n="eqKC">KC 数</span><span class="tex" data-tex="\mathrm{KC} = \dfrac{u_{\max}T}{D} = \dfrac{\pi H}{D\tanh kh}"></span></div>
+    </div>
+    <p class="note"><span class="validity" id="validity"></span><span data-i18n="note">线性势流，圆柱固定、竖直、直立于海底；$a = D/2$，$\epsilon_0 = 1$，$\epsilon_m = 2$，$H_m = J_m + iY_m$；$\rho = 1025\,\mathrm{kg/m^3}$，$g = 9.81\,\mathrm{m/s^2}$。</span></p>
+    <noscript><p class="note">此演示需要启用 JavaScript。This demonstration requires JavaScript.</p></noscript>
+  </main>
+  <script type="module">
+    import { setupPage, slider, playback, node, text, mathText, richText, responsive, path, fmt, label, ticks } from '../common/demo.js';
+    import { depthClass, breakingSteepness } from '../common/wave-core.js';
+    import { macCamyFuchs, effectiveInertia } from '../common/cylinder-core.js';
+
+    const { t } = setupPage({
+      zh: { back:'← 返回卿景博的学术主页', eyebrow:'波浪与结构 · 圆柱绕射', title:'圆柱绕射', intro:'规则波遇到直立圆柱，一部分被反射和散射：迎浪面前形成驻波，圆柱背后出现遮蔽区。圆柱直径与波长相当时，波浪力明显低于 Morison 公式的估计。', parameters:'波浪与圆柱参数',
+        height:'波高', period:'周期', depth:'水深', diameter:'圆柱直径', show:'显示', total:'总波面', scattered:'散射波', reset:'重置', pause:'暂停', play:'播放',
+        surfaceTitle:'圆柱周围的波面', surfaceNote:(v) => `竖向放大 ${v} 倍`, surfaceFoot:'波浪从左向右传播；颜色越浅，波面越高。',
+        runupTitle:'沿圆柱一周的波面振幅', runupLegend:'圆柱表面', incidentLegend:'入射波', frontPoint:'迎浪点', rearPoint:'背浪点',
+        forceTitle:'等效惯性系数', mfLegend:'MacCamy–Fuchs', morisonLegend:'Morison，$C_M = 2$',
+        wavelength:'波长', size:'相对尺度', forceMax:'波浪力幅值', cm:'等效惯性系数', runupMax:'最大波面振幅', kc:'KC 数',
+        deep:'深水', intermediate:'过渡水深', shallow:'浅水', morisonForce:(f, p) => `Morison 为 ${f}，${p}`, higher:(p) => `高 ${p}%`, lower:(p) => `低 ${p}%`,
+        cmSub:'Morison 取 2', at:(b) => `位于 $\\beta = ${b}^\\circ$`, kcSub:'水面处的水平速度',
+        eqSurface:'波面', eqForce:'波浪力', eqMorison:'Morison 惯性力', eqKC:'KC 数',
+        note:'线性势流，圆柱固定、竖直、直立于海底；$a = D/2$，$\\epsilon_0 = 1$，$\\epsilon_m = 2$，$H_m = J_m + iY_m$；$\\rho = 1025\\,\\mathrm{kg/m^3}$，$g = 9.81\\,\\mathrm{m/s^2}$。',
+        ok:'线性绕射', okTitle:'MacCamy–Fuchs 线性绕射解。', breaking:'超过破碎极限', breakingTitle:'H/L 超过 Miche 极限 0.142 tanh(kh)，实际波浪会破碎。' },
+      en: { back:'← Jingbo Qing · Academic homepage', eyebrow:'Waves and structures · Cylinder', title:'Diffraction by a cylinder', intro:'A regular wave meets a vertical cylinder and is partly reflected and scattered: a standing pattern builds up in front and a sheltered zone forms behind. When the diameter is comparable with the wavelength, the force is well below the Morison estimate.', parameters:'Wave and cylinder parameters',
+        height:'Height', period:'Period', depth:'Depth', diameter:'Diameter', show:'Show', total:'Total surface', scattered:'Scattered wave', reset:'Reset', pause:'Pause', play:'Play',
+        surfaceTitle:'Free surface around the cylinder', surfaceNote:(v) => `vertical exaggeration ${v}×`, surfaceFoot:'Waves travel from left to right; lighter colours are higher.',
+        runupTitle:'Wave amplitude around the cylinder', runupLegend:'Cylinder wall', incidentLegend:'Incident wave', frontPoint:'front', rearPoint:'rear',
+        forceTitle:'Effective inertia coefficient', mfLegend:'MacCamy–Fuchs', morisonLegend:'Morison, $C_M = 2$',
+        wavelength:'Wavelength', size:'Relative size', forceMax:'Force amplitude', cm:'Effective inertia', runupMax:'Largest amplitude', kc:'KC number',
+        deep:'deep water', intermediate:'intermediate depth', shallow:'shallow water', morisonForce:(f, p) => `Morison ${f}, ${p}`, higher:(p) => `${p}% higher`, lower:(p) => `${p}% lower`,
+        cmSub:'2 in the Morison formula', at:(b) => `at $\\beta = ${b}^\\circ$`, kcSub:'horizontal velocity at the surface',
+        eqSurface:'Free surface', eqForce:'Wave force', eqMorison:'Morison inertia force', eqKC:'KC number',
+        note:'Linear potential flow; the cylinder is fixed, vertical and stands on the bed. $a = D/2$, $\\epsilon_0 = 1$, $\\epsilon_m = 2$, $H_m = J_m + iY_m$; $\\rho = 1025\\,\\mathrm{kg/m^3}$, $g = 9.81\\,\\mathrm{m/s^2}$.',
+        ok:'Linear diffraction', okTitle:'MacCamy–Fuchs linear diffraction solution.', breaking:'Beyond breaking limit', breakingTitle:'H/L exceeds the Miche limit 0.142 tanh(kh); a real wave would break.' },
+    }, 'wave-lab');
+
+    const schedule = (() => { let pending = false; return () => { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; update(); }); } }; })();
+    const H = slider('height', { min: 0.5, max: 6, format: (v) => `${v.toFixed(1)} m`, onInput: schedule });
+    const T = slider('period', { min: 3, max: 15, format: (v) => `${v.toFixed(1)} s`, onInput: schedule });
+    const Dp = slider('depth', { min: 5, max: 100, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const Dc = slider('diameter', { min: 1, max: 60, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const DEFAULTS = [2, 6, 20, 30];
+    let sol, field, show = 'total', clock;
+
+    const showButtons = { total: document.getElementById('show-total'), scattered: document.getElementById('show-scattered') };
+    const setShow = (s) => { show = s; for (const [k, b] of Object.entries(showButtons)) b.setAttribute('aria-pressed', String(k === s)); };
+    showButtons.total.addEventListener('click', () => { setShow('total'); draw3d(clock ? clock.time : 0); });
+    showButtons.scattered.addEventListener('click', () => { setShow('scattered'); draw3d(clock ? clock.time : 0); });
+
+    // Polar grid around the cylinder: the inner ring lies on the wall, so the water meets the cylinder exactly.
+    const NR = 60, NT = 180;
+    function buildField() {
+      const a = sol.a, R = Math.max(3.2 * a, 1.8 * sol.L); // about 3.6 wavelengths across
+      const rs = Array.from({ length: NR + 1 }, (_, i) => a + (R - a) * (i / NR) ** 1.2);
+      const n = (NR + 1) * NT, xy = new Float32Array(2 * n), amp = new Float32Array(4 * n), grad = new Float32Array(4 * n);
+      const Ar = new Float64Array(n), Ai = new Float64Array(n);
+      for (let i = 0; i <= NR; i++) {
+        for (let j = 0; j < NT; j++) {
+          const p = i * NT + j, th = (2 * Math.PI * j) / NT, x = rs[i] * Math.cos(th), y = rs[i] * Math.sin(th);
+          const A = i === 0 ? sol.runup(th) : sol.amplitude(x, y); // on the wall use the run-up series directly
+          Ar[p] = A[0]; Ai[p] = A[1];
+          xy[2 * p] = x; xy[2 * p + 1] = y;
+          amp.set([A[0], A[1], Math.cos(sol.k * x), Math.sin(sol.k * x)], 4 * p);
+        }
+      }
+      // ∂A/∂x and ∂A/∂y for the shading normal, from differences along r and θ on the grid.
+      for (let i = 0; i <= NR; i++) {
+        const i0 = Math.max(0, i - 1), i1 = Math.min(NR, i + 1), dr = rs[i1] - rs[i0];
+        for (let j = 0; j < NT; j++) {
+          const p = i * NT + j, th = (2 * Math.PI * j) / NT, jm = i * NT + ((j + NT - 1) % NT), jp = i * NT + ((j + 1) % NT);
+          const pr0 = i0 * NT + j, pr1 = i1 * NT + j, dth = (4 * Math.PI) / NT, r = rs[i];
+          const drR = (Ar[pr1] - Ar[pr0]) / dr, drI = (Ai[pr1] - Ai[pr0]) / dr;
+          const dtR = (Ar[jp] - Ar[jm]) / dth, dtI = (Ai[jp] - Ai[jm]) / dth;
+          const c = Math.cos(th), s = Math.sin(th);
+          grad.set([c * drR - (s / r) * dtR, c * drI - (s / r) * dtI, s * drR + (c / r) * dtR, s * drI + (c / r) * dtI], 4 * p);
+        }
+      }
+      const index = new Uint16Array(6 * NR * NT);
+      let q = 0;
+      for (let i = 0; i < NR; i++) for (let j = 0; j < NT; j++) {
+        const p0 = i * NT + j, p1 = i * NT + ((j + 1) % NT), p2 = (i + 1) * NT + ((j + 1) % NT), p3 = (i + 1) * NT + j;
+        index.set([p0, p1, p2, p0, p2, p3], q); q += 6;
+      }
+      const wallMax = Math.max(...Array.from({ length: NT }, (_, j) => Math.hypot(Ar[j], Ai[j])));
+      return { R, xy, amp, grad, index, wallMax };
+    }
+
+    function update() {
+      sol = macCamyFuchs(H.get(), T.get(), Dp.get(), Dc.get());
+      field = buildField();
+      metrics();
+      uploaded = false;
+      draw3d(clock ? clock.time : 0);
+      [runupPlot, forcePlot].forEach((p) => p.redraw());
+    }
+
+    // Wall amplitude |η(a, β)|/(H/2), with β measured from the front (upwave) point: θ = π − β.
+    const wallAmp = (beta) => Math.hypot(...sol.runup(Math.PI - beta));
+
+    function metrics() {
+      const set = (id, v) => richText(document.getElementById(id), v);
+      const hL = sol.h / sol.L;
+      set('m-L', fmt(sol.L, 4)); set('m-L-sub', `$h/L = ${fmt(hL, 3)}$ · ${t[depthClass(hL)]}`);
+      set('m-DL', fmt(sol.D / sol.L, 3)); set('m-DL-sub', `$ka = ${fmt(sol.ka, 3)}$`);
+      const unit = sol.forceAmplitude >= 1e6 ? ['MN', 1e6] : ['kN', 1e3];
+      set('m-F', fmt(sol.forceAmplitude / unit[1], 3)); document.getElementById('m-F-unit').textContent = unit[0];
+      const p = 100 * (sol.forceAmplitude / sol.morison - 1);
+      set('m-F-sub', t.morisonForce(`${fmt(sol.morison / unit[1], 3)} ${unit[0]}`, p >= 0 ? t.higher(fmt(p, 2)) : t.lower(fmt(-p, 2))));
+      set('m-cm', fmt(sol.cmEff, 3)); set('m-cm-sub', t.cmSub);
+      let best = 0, bestBeta = 0;
+      for (let i = 0; i <= 360; i++) { const b = (i / 360) * Math.PI, v = wallAmp(b); if (v > best) { best = v; bestBeta = b; } }
+      set('m-R', fmt(best, 3)); set('m-R-sub', t.at(Math.round((bestBeta * 180) / Math.PI)));
+      set('m-KC', fmt(sol.keuleganCarpenter, 3)); set('m-KC-sub', t.kcSub);
+      const breaking = sol.H / sol.L > breakingSteepness(sol.kh);
+      const v = document.getElementById('validity');
+      v.className = 'validity' + (breaking ? ' caution' : '');
+      v.textContent = breaking ? t.breaking : t.ok; v.title = breaking ? t.breakingTitle : t.okTitle;
+    }
+
+    // ----- 3D surface with WebGL: orthographic view, smooth shading, depth buffer for the cylinder. -----
+    const canvas = document.getElementById('surface');
+    const gl = canvas.getContext('webgl', { antialias: true, premultipliedAlpha: false });
+    const VIEW = { azimuth: (-24 * Math.PI) / 180, elevation: (30 * Math.PI) / 180 };
+    const LIGHT = (() => { const l = [-0.45, -0.35, 0.82], n = Math.hypot(...l); return l.map((v) => v / n); })();
+    // Shared view transform: rotate by the azimuth about z, tilt by the elevation; depth grows away from the viewer.
+    const VIEW_GLSL = `
+      uniform vec4 u_view;   // cos azimuth, sin azimuth, sin elevation, cos elevation
+      uniform vec3 u_scale;  // clip-space scale for x, y and depth
+      vec4 project(vec3 p) {
+        float xr = p.x * u_view.x - p.y * u_view.y, yr = p.x * u_view.y + p.y * u_view.x;
+        return vec4(xr * u_scale.x, (yr * u_view.z + p.z * u_view.w) * u_scale.y, (yr * u_view.w - p.z * u_view.z) * u_scale.z, 1.0);
+      }`;
+    const WATER_VS = `
+      attribute vec2 a_xy; attribute vec4 a_amp; attribute vec4 a_grad;
+      uniform vec2 u_cs; uniform float u_scattered, u_zw, u_k;
+      varying float v_e; varying vec3 v_n;
+      ${VIEW_GLSL}
+      void main() {
+        // η/(H/2) = Re[A e^{−iωt}] = A_r cos ωt + A_i sin ωt; the scattered wave is A minus the incident e^{ikx}.
+        vec2 A = a_amp.xy - u_scattered * a_amp.zw;
+        vec2 Ax = a_grad.xy - u_scattered * u_k * vec2(-a_amp.w, a_amp.z), Ay = a_grad.zw;
+        v_e = dot(A, u_cs);
+        v_n = normalize(vec3(-u_zw * dot(Ax, u_cs), -u_zw * dot(Ay, u_cs), 1.0));
+        gl_Position = project(vec3(a_xy, v_e * u_zw));
+      }`;
+    const WATER_FS = `
+      precision mediump float;
+      varying float v_e; varying vec3 v_n; uniform vec3 u_light;
+      void main() {
+        float s = clamp((v_e + 1.4) / 2.8, 0.0, 1.0);
+        vec3 col = mix(vec3(0.27, 0.53, 0.77), vec3(0.87, 0.94, 0.99), s);
+        gl_FragColor = vec4(col * (0.35 + 0.8 * max(dot(normalize(v_n), u_light), 0.0)), 1.0);
+      }`;
+    const SOLID_VS = `
+      attribute vec3 a_pos; attribute vec3 a_normal; varying vec3 v_n;
+      ${VIEW_GLSL}
+      void main() { v_n = a_normal; gl_Position = project(a_pos); }`;
+    const SOLID_FS = `
+      precision mediump float;
+      varying vec3 v_n; uniform vec3 u_light; uniform vec3 u_color;
+      void main() { gl_FragColor = vec4(u_color * (0.62 + 0.45 * max(dot(normalize(v_n), u_light), 0.0)), 1.0); }`;
+    const programs = gl && (() => {
+      const shader = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+      const make = (vs, fs) => {
+        const p = gl.createProgram();
+        gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+        const loc = (name) => (name.startsWith('a_') ? gl.getAttribLocation(p, name) : gl.getUniformLocation(p, name));
+        return { p, loc };
+      };
+      return { water: make(WATER_VS, WATER_FS), solid: make(SOLID_VS, SOLID_FS) };
+    })();
+    if (!gl) canvas.replaceWith(Object.assign(document.createElement('p'), { className: 'note', textContent: 'WebGL is not available in this browser.' }));
+    const buffers = {};
+    let uploaded = false;
+    const bufferData = (name, data, target = gl.ARRAY_BUFFER) => { buffers[name] ??= gl.createBuffer(); gl.bindBuffer(target, buffers[name]); gl.bufferData(target, data, gl.STATIC_DRAW); };
+    // World height of η/(H/2) = 1: vertical exaggeration chosen so that H = 3 m would rise to 0.12 R.
+    const exaggeration = () => (0.12 * field.R) / 3;
+    function upload() {
+      const { xy, amp, grad, index, R, wallMax } = field;
+      bufferData('xy', xy); bufferData('amp', amp); bufferData('grad', grad); bufferData('index', index, gl.ELEMENT_ARRAY_BUFFER);
+      // Cylinder: side from just below the lowest wall trough to above the highest crest, plus the top cap.
+      const a = sol.a, zw = (sol.H / 2) * exaggeration(), zb = -1.1 * wallMax * zw, zt = 1.6 * wallMax * zw + 0.15 * a, S = 96;
+      const pos = [], nor = [], idx = [];
+      for (let j = 0; j <= S; j++) {
+        const th = (2 * Math.PI * j) / S, c = Math.cos(th), s = Math.sin(th);
+        pos.push(a * c, a * s, zb, a * c, a * s, zt); nor.push(c, s, 0, c, s, 0);
+        if (j < S) idx.push(2 * j, 2 * j + 1, 2 * j + 2, 2 * j + 1, 2 * j + 3, 2 * j + 2);
+      }
+      const centre = pos.length / 3;
+      pos.push(0, 0, zt); nor.push(0, 0, 1);
+      for (let j = 0; j <= S; j++) { const th = (2 * Math.PI * j) / S; pos.push(a * Math.cos(th), a * Math.sin(th), zt); nor.push(0, 0, 1); if (j < S) idx.push(centre, centre + 1 + j, centre + 2 + j); }
+      bufferData('cylPos', new Float32Array(pos)); bufferData('cylNor', new Float32Array(nor)); bufferData('cylIdx', new Uint16Array(idx), gl.ELEMENT_ARRAY_BUFFER);
+      buffers.cylCount = idx.length;
+      buffers.zt = zt; buffers.zw = zw;
+      document.getElementById('surface-note').textContent = t.surfaceNote(fmt(exaggeration(), 2));
+      uploaded = true;
+    }
+    const attrib = (prog, name, buffer, size) => { const l = prog.loc(name); gl.bindBuffer(gl.ARRAY_BUFFER, buffers[buffer]); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, size, gl.FLOAT, false, 0, 0); return l; };
+    function draw3d(time) {
+      if (!gl || !sol || !canvas.clientWidth) return;
+      if (!uploaded) upload();
+      const dpr = window.devicePixelRatio || 1, W = canvas.clientWidth, Hc = canvas.clientHeight;
+      if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(Hc * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(Hc * dpr); }
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+      const R = field.R, se = Math.sin(VIEW.elevation), ce = Math.cos(VIEW.elevation), zmax = Math.max(buffers.zt, 2.2 * buffers.zw);
+      const scale = Math.min((W - 16) / (2 * R), (Hc - 16) / (2 * R * se + 2 * zmax * ce)); // pixels per metre
+      const view = [Math.cos(VIEW.azimuth), Math.sin(VIEW.azimuth), se, ce], sc = [(2 * scale) / W, (2 * scale) / Hc, 0.9 / (R + zmax)];
+      const setView = (prog) => { gl.uniform4fv(prog.loc('u_view'), view); gl.uniform3fv(prog.loc('u_scale'), sc); gl.uniform3fv(prog.loc('u_light'), LIGHT); };
+      const w = programs.water; gl.useProgram(w.p); setView(w);
+      gl.uniform2f(w.loc('u_cs'), Math.cos(sol.omega * time), Math.sin(sol.omega * time));
+      gl.uniform1f(w.loc('u_scattered'), show === 'scattered' ? 1 : 0); gl.uniform1f(w.loc('u_zw'), buffers.zw); gl.uniform1f(w.loc('u_k'), sol.k);
+      const la = [attrib(w, 'a_xy', 'xy', 2), attrib(w, 'a_amp', 'amp', 4), attrib(w, 'a_grad', 'grad', 4)];
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index); gl.drawElements(gl.TRIANGLES, field.index.length, gl.UNSIGNED_SHORT, 0);
+      la.forEach((l) => gl.disableVertexAttribArray(l));
+      const s = programs.solid; gl.useProgram(s.p); setView(s); gl.uniform3f(s.loc('u_color'), 0.80, 0.82, 0.84);
+      const ls = [attrib(s, 'a_pos', 'cylPos', 3), attrib(s, 'a_normal', 'cylNor', 3)];
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.cylIdx); gl.drawElements(gl.TRIANGLES, buffers.cylCount, gl.UNSIGNED_SHORT, 0);
+      ls.forEach((l) => gl.disableVertexAttribArray(l));
+    }
+    new ResizeObserver(() => draw3d(clock ? clock.time : 0)).observe(canvas);
+
+    // ----- SVG charts -----
+    const M = { left: 48, right: 14, top: 24, bottom: 40 };
+    function frame(svg, w, height, X, Y, xticks, yticks, xlabel, ylabel) {
+      svg.querySelector('g.root')?.remove();
+      const root = node('g', { class: 'root' }, svg);
+      const pw = w - M.left - M.right, ph = height - M.top - M.bottom;
+      xticks.forEach(([v, s]) => { node('line', { x1: X(v), x2: X(v), y1: M.top, y2: M.top + ph, class: 'grid' }, root); mathText(root, X(v), height - 21, s, { 'text-anchor': 'middle' }); });
+      yticks.forEach((v) => { node('line', { x1: M.left, x2: M.left + pw, y1: Y(v), y2: Y(v), class: 'grid' }, root); text(root, M.left - 6, Y(v) + 4, label(v), { 'text-anchor': 'end' }); });
+      node('line', { x1: M.left, x2: M.left + pw, y1: M.top + ph, y2: M.top + ph, class: 'axis' }, root);
+      node('line', { x1: M.left, x2: M.left, y1: M.top, y2: M.top + ph, class: 'axis' }, root);
+      mathText(root, M.left + pw, height - 5, xlabel, { 'text-anchor': 'end', class: 'label' });
+      mathText(root, 4, M.top - 10, ylabel, { class: 'label' });
+      return { root, pw, ph };
+    }
+
+    // Amplitude along the wall against β (0° = front, 180° = rear).
+    const runupEl = document.getElementById('runup');
+    const runupPlot = responsive(runupEl, 230, (w) => {
+      if (!sol) return;
+      const ymax = Math.max(2.2, Math.ceil(10 * Math.max(...Array.from({ length: 91 }, (_, i) => wallAmp((i / 90) * Math.PI)))) / 10);
+      const X = (b) => M.left + (b / 180) * (w - M.left - M.right), Y = (v) => M.top + (1 - v / ymax) * (230 - M.top - M.bottom);
+      const f = frame(runupEl, w, 230, X, Y, [0, 45, 90, 135, 180].map((b) => [b, `${b}°`]), ticks(ymax, 4).values, '$\\beta$', '$|\\eta|/(H/2)$');
+      node('line', { x1: X(0), x2: X(180), y1: Y(1), y2: Y(1), stroke: '#8fb0a8', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, f.root);
+      const xs = [], ys = [];
+      for (let i = 0; i <= 180; i++) { xs.push(X(i)); ys.push(Y(wallAmp((i * Math.PI) / 180))); }
+      node('path', { d: path(xs, ys), fill: 'none', stroke: '#216b68', 'stroke-width': 2 }, f.root);
+      text(f.root, X(0) + 4, M.top + 12, t.frontPoint);
+      text(f.root, X(180) - 4, M.top + 12, t.rearPoint, { 'text-anchor': 'end' });
+    });
+
+    // Effective inertia coefficient against ka (log axis), Morison C_M = 2, and the current ka.
+    const forceEl = document.getElementById('force');
+    const KA = [0.02, 20], cmCurve = Array.from({ length: 241 }, (_, i) => { const ka = KA[0] * (KA[1] / KA[0]) ** (i / 240); return [ka, effectiveInertia(ka)]; });
+    const forcePlot = responsive(forceEl, 230, (w) => {
+      if (!sol) return;
+      const lx = Math.log10, X = (ka) => M.left + ((lx(ka) - lx(KA[0])) / (lx(KA[1]) - lx(KA[0]))) * (w - M.left - M.right);
+      const Y = (v) => M.top + (1 - v / 2.4) * (230 - M.top - M.bottom);
+      const f = frame(forceEl, w, 230, X, Y, [[0.1, '0.1'], [1, '1'], [10, '10']], [0, 0.5, 1, 1.5, 2], '$ka$', '$C_{M,\\mathrm{eff}}$');
+      // D/L = 0.2, i.e. ka = 0.2π, often taken as where diffraction starts to matter.
+      const k02 = 0.2 * Math.PI;
+      node('line', { x1: X(k02), x2: X(k02), y1: M.top, y2: M.top + f.ph, stroke: '#b7c4bf', 'stroke-dasharray': '2 4' }, f.root);
+      mathText(f.root, X(k02) + 4, M.top + 12, '$D/L$ = 0.2');
+      node('line', { x1: X(KA[0]), x2: X(KA[1]), y1: Y(2), y2: Y(2), stroke: '#8fb0a8', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, f.root);
+      node('path', { d: path(cmCurve.map((p) => X(p[0])), cmCurve.map((p) => Y(p[1]))), fill: 'none', stroke: '#216b68', 'stroke-width': 2 }, f.root);
+      const ka = Math.min(Math.max(sol.ka, KA[0]), KA[1]);
+      node('circle', { cx: X(ka), cy: Y(effectiveInertia(ka)), r: 5, fill: '#183846', stroke: '#ffffff', 'stroke-width': 1.5 }, f.root);
+    });
+
+    clock = playback(document.getElementById('play'), t, (time) => draw3d(time));
+    document.getElementById('reset').addEventListener('click', () => { H.set(DEFAULTS[0]); T.set(DEFAULTS[1]); Dp.set(DEFAULTS[2]); Dc.set(DEFAULTS[3]); setShow('total'); update(); clock.reset(); });
+    H.set(DEFAULTS[0]); T.set(DEFAULTS[1]); Dp.set(DEFAULTS[2]); Dc.set(DEFAULTS[3]); setShow('total');
+    update();
+  </script>
+</body>
+</html>

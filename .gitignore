@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+.env
+.env.*
+!.env.example
+npm-debug.log*
+# Private planning notes (contain personal details); kept on this computer only
+个人主页架构.md
+网页构想.md
+审阅记录-*.md

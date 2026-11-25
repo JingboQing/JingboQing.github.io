@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
+  <rect width="720" height="440" fill="#ffffff"/>
+  <rect x="470" y="70" width="28" height="300" fill="#216b68" fill-opacity="1"/>
+  <line x1="475" y1="100" x2="493" y2="100" stroke="#ffffff" stroke-width="1.5"/>
+  <rect x="502" y="90" width="22" height="280" fill="none" stroke="#c4cfc8" stroke-width="2"/>
+  <rect x="528" y="60" width="34" height="310" fill="#216b68" fill-opacity="0.85"/>
+  <line x1="533" y1="90" x2="557" y2="90" stroke="#ffffff" stroke-width="1.5"/>
+  <rect x="566" y="100" width="20" height="270" fill="none" stroke="#c4cfc8" stroke-width="2"/>
+  <rect x="590" y="80" width="30" height="290" fill="#216b68" fill-opacity="0.7"/>
+  <line x1="595" y1="110" x2="615" y2="110" stroke="#ffffff" stroke-width="1.5"/>
+  <rect x="624" y="95" width="24" height="275" fill="none" stroke="#c4cfc8" stroke-width="2"/>
+  <line x1="450" y1="371" x2="670" y2="371" stroke="#5a6c69" stroke-width="2"/>
+  <text x="64" y="160" font-family="Georgia, 'Times New Roman', serif" font-size="64" fill="#216b68">Reading list</text>
+  <text x="68" y="204" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" letter-spacing="4" fill="#5a6c69">WAVES AND STRUCTURES</text>
+</svg>

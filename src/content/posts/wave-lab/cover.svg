@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
+  <rect width="720" height="440" fill="#ffffff"/>
+  <path d="M-40 410 C 120 340, 260 340, 400 368 S 640 414, 780 344" fill="none" stroke="#c4cfc8" stroke-width="3"/>
+  <text x="72" y="205" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="200" fill="#216b68">η</text>
+  <text x="78" y="330" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" letter-spacing="5" fill="#5a6c69">LINEAR AND STOKES WAVES</text>
+</svg>

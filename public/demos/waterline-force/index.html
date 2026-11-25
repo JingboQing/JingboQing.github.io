@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Wave force on a vertical cylinder identified from the surface elevation at a few points on its waterline, compared with the exact MacCamy–Fuchs force, and how the error depends on the number and placement of the points.">
+  <title>由水线波面识别波浪力 · 卿景博</title>
+  <link rel="stylesheet" href="../common/katex/katex.min.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script src="../common/katex/katex.min.js"></script>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <a class="back" href="../../zh/updates/fixed-structure-loads/" data-back data-i18n="back">← 返回卿景博的学术主页</a>
+        <p class="eyebrow" data-i18n="eyebrow">波浪与结构 · 荷载识别</p>
+        <h1 data-i18n="title">由水线波面识别波浪力</h1>
+        <p class="intro" data-i18n="intro">直立圆柱所受的水平波浪力，完全由柱面水线上的波面决定。只在水线上取几个测点，能把力算得多准？测点放在哪里、要放几个，取决于圆柱的绕射有多强。</p>
+      </div>
+      <nav class="languages" aria-label="Language"><a href="?lang=zh" data-language="zh">中文</a><a href="?lang=en" data-language="en">English</a></nav>
+    </header>
+
+    <section class="controls" data-i18n-label="parameters">
+      <div><label for="height"><span><span data-i18n="height">波高</span> <span data-tex="H"></span></span><output id="height-output" for="height"></output></label><input id="height" type="range" min="0.5" max="6" step="0.1" value="2"></div>
+      <div><label for="period"><span><span data-i18n="period">周期</span> <span data-tex="T"></span></span><output id="period-output" for="period"></output></label><input id="period" type="range" min="3" max="15" step="0.1" value="6"></div>
+      <div><label for="depth"><span><span data-i18n="depth">水深</span> <span data-tex="h"></span></span><output id="depth-output" for="depth"></output></label><input id="depth" type="range"></div>
+      <div><label for="diameter"><span><span data-i18n="diameter">圆柱直径</span> <span data-tex="D"></span></span><output id="diameter-output" for="diameter"></output></label><input id="diameter" type="range"></div>
+      <div><label for="points"><span><span data-i18n="points">测点数</span> <span data-tex="W"></span></span><output id="points-output" for="points"></output></label><input id="points" type="range" min="1" max="12" step="1" value="2"></div>
+      <div><label for="offset"><span><span data-i18n="offset">首个测点位置</span> <span data-tex="\beta_0"></span></span><output id="offset-output" for="offset"></output></label><input id="offset" type="range" min="0" max="180" step="1" value="0"></div>
+    </section>
+    <div class="toolbar">
+      <span class="spacer"></span>
+      <button type="button" id="play"></button>
+      <button type="button" id="reset" data-i18n="reset">重置</button>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="ringTitle">水线上的波面与测点</h2></div>
+        <svg id="ring" role="img" data-i18n-label="ringTitle"></svg>
+        <div class="panel-foot" data-i18n="ringFoot">俯视；波浪从左向右传播。圆柱固定不动，外侧曲线表示水线上的波面高程（已放大）：虚线圆为静水位，曲线在其外为波峰、在其内为波谷。测点颜色越深，在积分中的权重越大。</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="timeTitle">波浪力时程</h2></div>
+        <div class="legend"><span class="theory" data-i18n="exactLegend">真实波浪力</span><span class="estimate" data-i18n="identifiedLegend">由测点识别</span></div>
+        <svg id="time" role="img" data-i18n-label="timeTitle"></svg>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="bandTitle">识别误差与测点数</h2></div>
+      <div class="legend"><span class="bars" data-i18n="bandLegend">不同布置下的误差范围</span><span class="estimate" data-i18n="currentLegend">当前布置</span></div>
+      <svg id="band" role="img" data-i18n-label="bandTitle"></svg>
+      <div class="panel-foot" data-i18n="bandFoot">测点沿圆周等间距布置，转动整组测点，得到每个测点数下误差的最小值和最大值。</div>
+    </div>
+
+    <dl class="metrics" aria-live="polite">
+      <div><dt><span data-i18n="size">相对尺度</span> <span data-tex="D/L"></span></dt><dd><span id="m-DL"></span><span class="sub" id="m-DL-sub"></span></dd></div>
+      <div><dt><span data-i18n="forceId">识别力幅值</span> <span data-tex="\hat F"></span></dt><dd><span id="m-F"></span><small id="m-F-unit"></small><span class="sub" id="m-F-sub"></span></dd></div>
+      <div><dt><span data-i18n="phase">相位差</span> <span data-tex="\Delta\varphi"></span></dt><dd><span id="m-phase"></span><span class="sub" id="m-phase-sub"></span></dd></div>
+      <div><dt><span data-i18n="error">识别误差</span> <span data-tex="\mathrm{NRMSE}"></span></dt><dd><span id="m-err"></span><small>%</small><span class="sub" id="m-err-sub"></span></dd></div>
+      <div><dt><span data-i18n="needed">所需测点数</span> <span data-tex="W"></span></dt><dd><span id="m-W"></span><span class="sub" id="m-W-sub"></span></dd></div>
+      <div><dt><span data-i18n="wavelength">波长</span> <span data-tex="L"></span></dt><dd><span id="m-L"></span><small>m</small><span class="sub" id="m-L-sub"></span></dd></div>
+    </dl>
+    <div class="equations">
+      <div class="row"><span data-i18n="eqForce">水线积分</span><span class="tex" data-tex="F = -\dfrac{\rho g a\tanh kh}{k}\oint \eta(a,\theta,t)\cos\theta\,\mathrm{d}\theta"></span></div>
+      <div class="row"><span data-i18n="eqSeries">水线级数</span><span class="tex" data-tex="\eta(a,\theta_w,t) = \sum_{v=-V}^{V} b_v(t)\,e^{iv\theta_w},\quad w = 1,\dots,W,\quad 2V+1 \ge W"></span></div>
+      <div class="row"><span data-i18n="eqIdentify">由测点识别</span><span class="tex" data-tex="\hat F = -\dfrac{\pi\rho g a\tanh kh}{k}\,(b_1 + b_{-1}),\qquad \min_{b}\ \sum_{v=-V}^{V}|b_v|^2"></span></div>
+      <div class="row"><span data-i18n="eqWall">柱面波面</span><span class="tex" data-tex="\eta(a,\theta,t) = \dfrac{H}{2}\,\mathrm{Re}\Bigl\{\sum_{m=0}^{\infty}\epsilon_m i^m\,\dfrac{2i}{\pi ka\,H_m'(ka)}\cos m\theta\; e^{-i\omega t}\Bigr\}"></span></div>
+      <div class="row"><span data-i18n="eqError">误差</span><span class="tex" data-tex="\mathrm{NRMSE} = \dfrac{\mathrm{rms}(\hat F - F)}{\max F - \min F}"></span></div>
+    </div>
+    <p class="note"><span class="validity" id="validity"></span><span data-i18n="note">线性势流，规则波，圆柱固定、竖直、直立于海底；测点沿圆周等间距布置，水线级数的系数取满足测点值的最小范数解；$\theta$ 从波浪传播方向量起，$\beta = \pi - \theta$ 从迎浪点量起；$a = D/2$，$\rho = 1025\,\mathrm{kg/m^3}$，$g = 9.81\,\mathrm{m/s^2}$。</span></p>
+    <noscript><p class="note">此演示需要启用 JavaScript。This demonstration requires JavaScript.</p></noscript>
+  </main>
+  <script type="module">
+    import { setupPage, slider, playback, node, text, mathText, richText, responsive, path, fmt, label, ticks } from '../common/demo.js';
+    import { depthClass, breakingSteepness } from '../common/wave-core.js';
+    import { macCamyFuchs } from '../common/cylinder-core.js';
+
+    const { t } = setupPage({
+      zh: { back:'← 返回卿景博的学术主页', eyebrow:'波浪与结构 · 荷载识别', title:'由水线波面识别波浪力', intro:'直立圆柱所受的水平波浪力，完全由柱面水线上的波面决定。只在水线上取几个测点，能把力算得多准？测点放在哪里、要放几个，取决于圆柱的绕射有多强。', parameters:'波浪、圆柱与测点参数',
+        height:'波高', period:'周期', depth:'水深', diameter:'圆柱直径', points:'测点数', offset:'首个测点位置', reset:'重置', pause:'暂停', play:'播放',
+        ringTitle:'水线上的波面与测点', ringFoot:'俯视；波浪从左向右传播。圆柱固定不动，外侧曲线表示水线上的波面高程（已放大）：虚线圆为静水位，曲线在其外为波峰、在其内为波谷。测点颜色越深，在积分中的权重越大。', waves:'波浪', frontPoint:'迎浪点', rearPoint:'背浪点',
+        timeTitle:'波浪力时程', exactLegend:'真实波浪力', identifiedLegend:'由测点识别',
+        bandTitle:'识别误差与测点数', bandLegend:'不同布置下的误差范围', currentLegend:'当前布置', bandFoot:'测点沿圆周等间距布置，转动整组测点，得到每个测点数下误差的最小值和最大值。',
+        size:'相对尺度', forceId:'识别力幅值', phase:'相位差', error:'识别误差', needed:'所需测点数', wavelength:'波长',
+        trueForce:(f) => `真实值 ${f}`, noPhase:'识别力为零', lead:'识别力超前', lag:'识别力滞后', inPhase:'与真实力同相', current:(w) => `当前 ${w} 个测点`,
+        neededSub:'任意布置下误差都小于 1%', over:'12 个以上',
+        deep:'深水', intermediate:'过渡水深', shallow:'浅水',
+        eqForce:'水线积分', eqSeries:'水线级数', eqIdentify:'由测点识别', eqWall:'柱面波面', eqError:'误差',
+        note:'线性势流，规则波，圆柱固定、竖直、直立于海底；测点沿圆周等间距布置，水线级数的系数取满足测点值的最小范数解；$\\theta$ 从波浪传播方向量起，$\\beta = \\pi - \\theta$ 从迎浪点量起；$a = D/2$，$\\rho = 1025\\,\\mathrm{kg/m^3}$，$g = 9.81\\,\\mathrm{m/s^2}$。',
+        ok:'线性绕射', okTitle:'MacCamy–Fuchs 线性绕射解。', breaking:'超过破碎极限', breakingTitle:'H/L 超过 Miche 极限 0.142 tanh(kh)，实际波浪会破碎。' },
+      en: { back:'← Jingbo Qing · Academic homepage', eyebrow:'Waves and structures · Load identification', title:'Wave force from the waterline', intro:'The horizontal wave force on a vertical cylinder is fully determined by the surface elevation along its waterline. How well can the force be recovered from a few points on that waterline? Where to put them, and how many are needed, depends on how strongly the cylinder diffracts the waves.', parameters:'Wave, cylinder and measurement points',
+        height:'Height', period:'Period', depth:'Depth', diameter:'Diameter', points:'Points', offset:'First point at', reset:'Reset', pause:'Pause', play:'Play',
+        ringTitle:'Surface and points on the waterline', ringFoot:'Plan view; waves travel from left to right. The cylinder is fixed; the curve outside it shows the surface elevation along the waterline (exaggerated): the dashed circle is the still-water level, with crests outside it and troughs inside. Darker points carry more weight in the integral.', waves:'waves', frontPoint:'front', rearPoint:'rear',
+        timeTitle:'Wave force over time', exactLegend:'Exact force', identifiedLegend:'From the points',
+        bandTitle:'Identification error and number of points', bandLegend:'Range over placements', currentLegend:'Current placement', bandFoot:'The points are evenly spaced around the cylinder; rotating the whole set gives the smallest and largest error for each number of points.',
+        size:'Relative size', forceId:'Identified amplitude', phase:'Phase difference', error:'Identification error', needed:'Points needed', wavelength:'Wavelength',
+        trueForce:(f) => `exact ${f}`, noPhase:'identified force is zero', lead:'identified force leads', lag:'identified force lags', inPhase:'in phase with the exact force', current:(w) => `${w} point${w > 1 ? 's' : ''} now`,
+        neededSub:'error below 1% for any placement', over:'more than 12',
+        deep:'deep water', intermediate:'intermediate depth', shallow:'shallow water',
+        eqForce:'Waterline integral', eqSeries:'Waterline series', eqIdentify:'From the points', eqWall:'Surface on the wall', eqError:'Error',
+        note:'Linear potential flow and regular waves; the cylinder is fixed, vertical and stands on the bed. The points are evenly spaced, and the series coefficients are the minimum-norm solution matching the measured values. $\\theta$ is measured from the direction of wave travel and $\\beta = \\pi - \\theta$ from the front point; $a = D/2$, $\\rho = 1025\\,\\mathrm{kg/m^3}$, $g = 9.81\\,\\mathrm{m/s^2}$.',
+        ok:'Linear diffraction', okTitle:'MacCamy–Fuchs linear diffraction solution.', breaking:'Beyond breaking limit', breakingTitle:'H/L exceeds the Miche limit 0.142 tanh(kh); a real wave would break.' },
+    }, 'fixed-structure-loads');
+
+    const RHO = 1025, G = 9.81, MAX_W = 12;
+    const schedule = (() => { let pending = false; return () => { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; update(); }); } }; })();
+    const H = slider('height', { min: 0.5, max: 6, format: (v) => `${v.toFixed(1)} m`, onInput: schedule });
+    const T = slider('period', { min: 3, max: 15, format: (v) => `${v.toFixed(1)} s`, onInput: schedule });
+    const Dp = slider('depth', { min: 5, max: 100, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const Dc = slider('diameter', { min: 1, max: 60, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const Wn = slider('points', { min: 1, max: MAX_W, format: (v) => `${Math.round(v)}`, onInput: schedule });
+    const B0 = slider('offset', { min: 0, max: 180, format: (v) => `${Math.round(v)}°`, onInput: schedule });
+    const DEFAULTS = [2, 6, 20, 12, 2, 0];
+    let sol, clock, F, Fh, wall, unit, bandData;
+
+    // F = C ∮ (η/(H/2)) cos θ dθ, with the run-up η(a, θ)/(H/2) from the MacCamy–Fuchs series.
+    const factor = () => (-RHO * G * sol.a * Math.tanh(sol.kh) / sol.k) * (sol.H / 2);
+    const thetaOf = (beta) => Math.PI - beta;
+    const pointAngles = (W, beta0) => Array.from({ length: W }, (_, w) => thetaOf(((beta0 + (360 * w) / W) * Math.PI) / 180));
+    // Gauss–Jordan elimination with partial pivoting; the systems here are at most 12 × 12.
+    function solve(K, rhs) {
+      const n = rhs.length, A = K.map((row, i) => [...row, rhs[i]]);
+      for (let c = 0; c < n; c++) {
+        let p = c;
+        for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+        [A[c], A[p]] = [A[p], A[c]];
+        for (let r = 0; r < n; r++) { if (r === c) continue; const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; }
+      }
+      return A.map((row, i) => row[n] / row[i]);
+    }
+    // The waterline is written as a truncated series η(θ) = Σ_{v=−V..V} b_v e^{ivθ} with 2V+1 ≥ W unknown coefficients,
+    // and the minimum-norm coefficients are taken from the W measured values. The force needs only b_1 + b_{−1}:
+    // with b = Aᴴy and (AAᴴ)y = η, where (AAᴴ)_wu = Σ_v e^{iv(θ_w − θ_u)} is real, b_1 + b_{−1} = 2 Σ_w y_w cos θ_w.
+    // For W ≥ 3 evenly spaced points this equals the trapezoidal rule for ∮ η cos θ dθ.
+    function identify(W, beta0) {
+      const th = pointAngles(W, beta0), V = Math.max(1, Math.ceil((W - 1) / 2));
+      const K = th.map((a) => th.map((b) => { let s = 1; for (let v = 1; v <= V; v++) s += 2 * Math.cos(v * (a - b)); return s; }));
+      const eta = th.map((a) => sol.runup(a));
+      const yr = solve(K, eta.map((e) => e[0])), yi = solve(K, eta.map((e) => e[1]));
+      let re = 0, im = 0;
+      th.forEach((a, w) => { re += 2 * Math.cos(a) * yr[w]; im += 2 * Math.cos(a) * yi[w]; });
+      const f = factor() * Math.PI;
+      return [f * re, f * im];
+    }
+    // For sinusoids, rms(F̂ − F) = |F̂ − F|/√2 and max F − min F = 2|F|.
+    const nrmse = (fh) => Math.hypot(fh[0] - F[0], fh[1] - F[1]) / (2 * Math.SQRT2 * Math.hypot(F[0], F[1]));
+    // Value at time t of a complex amplitude with e^{−iωt}.
+    const at = (c, time) => c[0] * Math.cos(sol.omega * time) + c[1] * Math.sin(sol.omega * time);
+
+    function update() {
+      sol = macCamyFuchs(H.get(), T.get(), Dp.get(), Dc.get(), RHO);
+      F = sol.force;
+      const W = Math.round(Wn.get()), beta0 = B0.get();
+      Fh = identify(W, beta0);
+      wall = Array.from({ length: SAMPLES }, (_, i) => sol.runup((2 * Math.PI * i) / SAMPLES));
+      unit = Math.hypot(...F) >= 1e6 ? ['MN', 1e6] : ['kN', 1e3];
+      bandData = Array.from({ length: MAX_W }, (_, j) => {
+        const n = j + 1, steps = 60;
+        let lo = Infinity, hi = 0;
+        for (let s = 0; s < steps; s++) { const e = nrmse(identify(n, ((360 / n) * s) / steps)); lo = Math.min(lo, e); hi = Math.max(hi, e); }
+        return { n, lo, hi, now: nrmse(identify(n, beta0)) };
+      });
+      metrics(W);
+      [ringPlot, timePlot, bandPlot].forEach((p) => p.redraw());
+      frame(clock ? clock.time : 0);
+    }
+
+    function metrics(W) {
+      const set = (id, v) => richText(document.getElementById(id), v);
+      const hL = sol.h / sol.L;
+      set('m-L', fmt(sol.L, 4)); set('m-L-sub', `$h/L = ${fmt(hL, 3)}$ · ${t[depthClass(hL)]}`);
+      set('m-DL', fmt(sol.D / sol.L, 3)); set('m-DL-sub', `$ka = ${fmt(sol.ka, 3)}$`);
+      const amp = Math.hypot(...Fh), exact = Math.hypot(...F);
+      // Points on the sides give a force that is zero up to round-off; show it as 0 rather than 0.000000.
+      set('m-F', fmt(amp < 1e-9 * exact ? 0 : amp / unit[1], 3)); document.getElementById('m-F-unit').textContent = unit[0];
+      set('m-F-sub', t.trueForce(`${fmt(exact / unit[1], 3)} ${unit[0]}`));
+      if (amp < 1e-9 * exact) { set('m-phase', '—'); set('m-phase-sub', t.noPhase); }
+      else {
+        // Re[c e^{−iωt}] = |c| cos(ωt − arg c) peaks at ωt = arg c, so a larger argument means a later peak.
+        let d = ((Math.atan2(Fh[1], Fh[0]) - Math.atan2(F[1], F[0])) * 180) / Math.PI;
+        d = ((d + 540) % 360) - 180;
+        set('m-phase', `${fmt(Math.abs(d), 2)}°`);
+        set('m-phase-sub', Math.abs(d) < 0.05 ? t.inPhase : d > 0 ? t.lag : t.lead);
+      }
+      set('m-err', fmt(100 * nrmse(Fh), 3)); set('m-err-sub', t.current(W));
+      const need = bandData.find((b) => b.hi < 0.01);
+      set('m-W', need ? String(need.n) : t.over); set('m-W-sub', t.neededSub);
+      const breaking = sol.H / sol.L > breakingSteepness(sol.kh);
+      const v = document.getElementById('validity');
+      v.className = 'validity' + (breaking ? ' caution' : '');
+      v.textContent = breaking ? t.breaking : t.ok; v.title = breaking ? t.breakingTitle : t.okTitle;
+    }
+
+    // ----- Plan view of the waterline -----
+    // The cylinder is drawn fixed. The surface elevation is a curve about a still-water circle that lies outside the
+    // cylinder, far enough that the troughs stay clear of it too; drawn on the cylinder's own outline, the curve
+    // would read as the cylinder moving.
+    const ringEl = document.getElementById('ring');
+    const RING_H = 300, SAMPLES = 360;
+    // Drawn elevation in units of H/2, capped at the largest possible run-up (twice the incident amplitude) plus a margin.
+    const capped = (eta) => Math.max(-2.2, Math.min(2.2, eta));
+    let ring = null;
+    const ringPlot = responsive(ringEl, RING_H, (w) => {
+      ringEl.replaceChildren();
+      if (!sol) return;
+      // R cylinder, R0 still water, S drawn displacement per unit of η/(H/2); R0 − 2.2 S stays outside R.
+      const R = Math.min(66, w * 0.19), R0 = 1.36 * R, S = 0.12 * R, outer = R0 + 2.2 * S, cx = w / 2, cy = 140;
+      const g = node('g', {}, ringEl);
+      node('circle', { cx, cy, r: R, fill: '#e3e8e5', stroke: '#9aa8a3', 'stroke-width': 1 }, g);
+      node('circle', { cx, cy, r: R0, fill: 'none', stroke: '#9aa8a3', 'stroke-width': 1, 'stroke-dasharray': '3 3' }, g);
+      // incident wave direction
+      const x1 = cx - outer - 16, x0 = Math.max(8, x1 - 38);
+      node('line', { x1: x0, x2: x1, y1: cy, y2: cy, stroke: '#5a6c69', 'stroke-width': 1.4 }, g);
+      node('path', { d: `M${x1},${cy - 5} L${x1 + 9},${cy} L${x1},${cy + 5} Z`, fill: '#5a6c69' }, g);
+      text(g, (x0 + x1) / 2, cy - 9, t.waves, { 'text-anchor': 'middle' });
+      text(g, cx - R0, cy + outer + 22, t.frontPoint, { 'text-anchor': 'middle' });
+      text(g, cx + R0, cy + outer + 22, t.rearPoint, { 'text-anchor': 'middle' });
+      const line = node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 2.2 }, g);
+      const W = Math.round(Wn.get());
+      const dots = pointAngles(W, B0.get()).map((th) => ({
+        th, el: node('circle', { r: 5.5, fill: '#183846', 'fill-opacity': 0.25 + 0.75 * Math.abs(Math.cos(th)), stroke: '#ffffff', 'stroke-width': 1.5 }, g),
+      }));
+      ring = { cx, cy, R0, S, line, dots };
+    });
+    function drawRing(time) {
+      if (!ring || !wall) return;
+      const { cx, cy, R0, S } = ring, c = Math.cos(sol.omega * time), s = Math.sin(sol.omega * time);
+      const radius = ([re, im]) => R0 + S * capped(re * c + im * s);
+      const xs = [], ys = [];
+      wall.forEach((eta, i) => { const th = (2 * Math.PI * i) / SAMPLES, r = radius(eta); xs.push(cx + r * Math.cos(th)); ys.push(cy - r * Math.sin(th)); });
+      ring.line.setAttribute('d', `${path(xs, ys)}Z`);
+      ring.dots.forEach(({ th, el }) => {
+        const r = radius(sol.runup(th));
+        el.setAttribute('cx', (cx + r * Math.cos(th)).toFixed(1)); el.setAttribute('cy', (cy - r * Math.sin(th)).toFixed(1));
+      });
+    }
+
+    // ----- SVG charts -----
+    const M = { left: 52, right: 14, top: 24, bottom: 40 };
+    function axes(svg, w, height, X, Y, xticks, yticks, xlabel, ylabel) {
+      svg.replaceChildren();
+      const root = node('g', { class: 'root' }, svg);
+      const pw = w - M.left - M.right, ph = height - M.top - M.bottom;
+      xticks.forEach(([v, s]) => { node('line', { x1: X(v), x2: X(v), y1: M.top, y2: M.top + ph, class: 'grid' }, root); mathText(root, X(v), height - 21, s, { 'text-anchor': 'middle' }); });
+      yticks.forEach(([v, s]) => { node('line', { x1: M.left, x2: M.left + pw, y1: Y(v), y2: Y(v), class: 'grid' }, root); text(root, M.left - 6, Y(v) + 4, s, { 'text-anchor': 'end' }); });
+      node('line', { x1: M.left, x2: M.left + pw, y1: M.top + ph, y2: M.top + ph, class: 'axis' }, root);
+      node('line', { x1: M.left, x2: M.left, y1: M.top, y2: M.top + ph, class: 'axis' }, root);
+      mathText(root, M.left + pw, height - 5, xlabel, { 'text-anchor': 'end', class: 'label' });
+      mathText(root, 4, M.top - 10, ylabel, { class: 'label' });
+      return { root, pw, ph };
+    }
+
+    // Force over three periods, with a cursor that follows the animation.
+    const timeEl = document.getElementById('time');
+    const TIME_H = 300, PERIODS = 3;
+    let cursor = null;
+    const timePlot = responsive(timeEl, TIME_H, (w) => {
+      if (!sol) return;
+      const top = Math.max(Math.hypot(...F), Math.hypot(...Fh)) / unit[1];
+      // Round axis end at or just above the larger amplitude, with ticks at multiples of a round step.
+      const step = ticks(top * 1.05 || 1, 4).step, ymax = step * Math.ceil((top * 1.05) / step || 1);
+      const half = Array.from({ length: Math.round(ymax / step) + 1 }, (_, i) => +(i * step).toFixed(10));
+      const X = (p) => M.left + (p / PERIODS) * (w - M.left - M.right), Y = (v) => M.top + (0.5 - v / (2 * ymax)) * (TIME_H - M.top - M.bottom);
+      const yticks = [...half.slice(1).map((v) => -v).reverse(), ...half].map((v) => [v, label(v)]);
+      const f = axes(timeEl, w, TIME_H, X, Y, [0, 1, 2, 3].map((p) => [p, String(p)]), yticks, '$t/T$', `$F$ (${unit[0]})`);
+      const xs = [], ye = [], yi = [];
+      for (let i = 0; i <= 240; i++) { const p = (i / 240) * PERIODS, time = p * sol.T; xs.push(X(p)); ye.push(Y(at(F, time) / unit[1])); yi.push(Y(at(Fh, time) / unit[1])); }
+      node('path', { d: path(xs, ye), fill: 'none', stroke: '#216b68', 'stroke-width': 2 }, f.root);
+      node('path', { d: path(xs, yi), fill: 'none', stroke: '#b0723a', 'stroke-width': 2, 'stroke-dasharray': '6 4' }, f.root);
+      cursor = { X, Y, line: node('line', { y1: M.top, y2: M.top + f.ph, stroke: '#b7c4bf', 'stroke-width': 1 }, f.root),
+        exact: node('circle', { r: 4.5, fill: '#216b68', stroke: '#ffffff', 'stroke-width': 1.5 }, f.root),
+        id: node('circle', { r: 4.5, fill: '#b0723a', stroke: '#ffffff', 'stroke-width': 1.5 }, f.root) };
+    });
+    function drawCursor(time) {
+      if (!cursor) return;
+      const p = (time / sol.T) % PERIODS, x = cursor.X(p).toFixed(1), tt = p * sol.T;
+      cursor.line.setAttribute('x1', x); cursor.line.setAttribute('x2', x);
+      cursor.exact.setAttribute('cx', x); cursor.exact.setAttribute('cy', cursor.Y(at(F, tt) / unit[1]).toFixed(1));
+      cursor.id.setAttribute('cx', x); cursor.id.setAttribute('cy', cursor.Y(at(Fh, tt) / unit[1]).toFixed(1));
+    }
+
+    // Error band over placements against the number of points; errors above 50% are drawn at the top.
+    const bandEl = document.getElementById('band');
+    const BAND_H = 250, EMAX = 0.5;
+    const bandPlot = responsive(bandEl, BAND_H, (w) => {
+      if (!bandData) return;
+      const X = (n) => M.left + ((n - 1) / (MAX_W - 1)) * (w - M.left - M.right), Y = (e) => M.top + (1 - Math.min(e, EMAX) / EMAX) * (BAND_H - M.top - M.bottom);
+      const f = axes(bandEl, w, BAND_H, X, Y, [1, 2, 3, 4, 6, 8, 10, 12].map((n) => [n, String(n)]), [0, 0.1, 0.2, 0.3, 0.4, 0.5].map((e) => [e, `${Math.round(100 * e)}%`]), '$W$', 'NRMSE');
+      const up = bandData.map((b) => `${X(b.n).toFixed(1)},${Y(b.hi).toFixed(1)}`), down = bandData.slice().reverse().map((b) => `${X(b.n).toFixed(1)},${Y(b.lo).toFixed(1)}`);
+      node('polygon', { points: [...up, ...down].join(' '), fill: '#cfe1db', 'fill-opacity': 0.8 }, f.root);
+      node('path', { d: path(bandData.map((b) => X(b.n)), bandData.map((b) => Y(b.now))), fill: 'none', stroke: '#b0723a', 'stroke-width': 1.8, 'stroke-dasharray': '6 4' }, f.root);
+      const W = Math.round(Wn.get()), cur = bandData[W - 1];
+      node('circle', { cx: X(W), cy: Y(cur.now), r: 5.5, fill: '#183846', stroke: '#ffffff', 'stroke-width': 1.5 }, f.root);
+    });
+
+    function frame(time) { drawRing(time); drawCursor(time); }
+    clock = playback(document.getElementById('play'), t, frame);
+    const all = [H, T, Dp, Dc, Wn, B0];
+    document.getElementById('reset').addEventListener('click', () => { all.forEach((s, i) => s.set(DEFAULTS[i])); update(); clock.reset(); });
+    all.forEach((s, i) => s.set(DEFAULTS[i]));
+    update();
+  </script>
+</body>
+</html>

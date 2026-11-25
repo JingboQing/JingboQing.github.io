@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Second- and fifth-order Stokes waves: surface profile against the linear wave, particle paths with Stokes drift, amplitude dispersion, and the depth–height plane.">
+  <title>Stokes 波 · 卿景博</title>
+  <link rel="stylesheet" href="../common/katex/katex.min.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script src="../common/katex/katex.min.js"></script>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <a class="back" href="../../zh/updates/wave-lab/" data-back data-i18n="back">← 返回卿景博的学术主页</a>
+        <p class="eyebrow" data-i18n="eyebrow">非线性波 · Stokes 波</p>
+        <h1 data-i18n="title">Stokes 波</h1>
+        <p class="intro" data-i18n="intro">按波陡逐阶修正线性解：波峰变尖、波谷变平，水质点每个周期都向前漂移一小段。可在二阶和五阶之间切换。</p>
+      </div>
+      <nav class="languages" aria-label="Language"><a href="?lang=zh" data-language="zh">中文</a><a href="?lang=en" data-language="en">English</a></nav>
+    </header>
+
+    <section class="controls" data-i18n-label="parameters">
+      <div><label for="height"><span><span data-i18n="height">波高</span> <span data-tex="H"></span></span><output id="height-output" for="height"></output></label><input id="height" type="range" min="0.05" max="3" step="0.05" value="2"></div>
+      <div><label for="period"><span><span data-i18n="period">周期</span> <span data-tex="T"></span></span><output id="period-output" for="period"></output></label><input id="period" type="range" min="2" max="16" step="0.1" value="8"></div>
+      <div><label for="depth"><span><span data-i18n="depth">水深</span> <span data-tex="h"></span></span><output id="depth-output" for="depth"></output></label><input id="depth" type="range"></div>
+    </section>
+    <div class="toolbar">
+      <span class="toolbar-label" data-i18n="order">阶数</span>
+      <button type="button" class="toggle" id="order-2" data-i18n="order2">二阶</button>
+      <button type="button" class="toggle" id="order-5" data-i18n="order5">五阶</button>
+      <span class="spacer"></span>
+      <button type="button" id="play"></button>
+      <button type="button" id="reset" data-i18n="reset">重置</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="profileTitle">波面形状</h2><span class="panel-note" data-i18n="profileNote">纵轴以波高归一化</span></div>
+      <div class="legend"><span class="reference" data-i18n="linearRef">线性波</span><span class="second" data-i18n="secondRef">二阶</span><span class="theory" data-i18n="fifthRef">五阶</span></div>
+      <svg id="profile" role="img" data-i18n-label="profileTitle"></svg>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="pathTitle">水质点的路径</h2><span class="panel-note" data-i18n="pathNote">位移按同一比例放大，路径加速播放</span></div>
+      <svg id="paths" role="img" data-i18n-label="pathTitle"></svg>
+      <div class="panel-foot" data-i18n="pathLegend">虚线是线性理论的闭合轨迹；左侧是漂流速度沿深度的分布，以水面值为 1。</div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="planeTitle">水深与波高的参数平面</h2><span class="panel-note" data-i18n="planeNote">对数坐标，圆点为当前参数</span></div>
+      <div class="legend"><span class="zone-break" data-i18n="zoneBreak">超过破碎极限</span><span class="zone-bump" data-i18n="zoneBump">二阶波谷出现次峰，$a_2/a_1 > 1/4$</span><span class="contour" data-i18n="contour">$a_2/a_1 = 0.05$</span></div>
+      <svg id="plane" role="img" data-i18n-label="planeTitle"></svg>
+    </div>
+
+    <dl class="metrics" aria-live="polite">
+      <div><dt><span data-i18n="wavelength">波长</span> <span data-tex="L"></span></dt><dd><span id="m-L"></span><small>m</small><span class="sub" id="m-L-sub"></span></dd></div>
+      <div><dt><span data-i18n="celerity">相速</span> <span data-tex="c"></span></dt><dd><span id="m-c"></span><small>m/s</small><span class="sub" id="m-c-sub"></span></dd></div>
+      <div><dt><span data-i18n="steep">波陡</span> <span data-tex="ka"></span></dt><dd><span id="m-ka"></span><span class="sub" id="m-ka-sub"></span></dd></div>
+      <div><dt><span data-i18n="ratio">二阶与一阶振幅比</span> <span data-tex="a_2/a_1"></span></dt><dd><span id="m-r"></span><span class="sub" id="m-r-sub"></span></dd></div>
+      <div><dt><span data-i18n="crest">波峰高度</span> <span data-tex="\eta_c/H"></span></dt><dd><span id="m-crest"></span><span class="sub" id="m-crest-sub"></span></dd></div>
+      <div><dt><span data-i18n="drift">水面漂流速度</span> <span data-tex="\bar u_s"></span></dt><dd><span id="m-drift"></span><small>m/s</small><span class="sub" id="m-drift-sub"></span></dd></div>
+    </dl>
+    <div class="equations">
+      <div class="row"><span data-i18n="eqSurface2">二阶波面</span><span class="tex" data-tex="\eta = a\cos\theta + \dfrac{ka^2}{4}\,\dfrac{\cosh kh\,(2+\cosh 2kh)}{\sinh^3 kh}\cos 2\theta"></span></div>
+      <div class="row"><span data-i18n="eqDrift">二阶漂流速度</span><span class="tex" data-tex="\bar u_s = \dfrac{ka^2\omega}{2}\,\dfrac{\cosh 2k(z+h)}{\sinh^2 kh}"></span></div>
+      <div class="row"><span data-i18n="eqSurface5">五阶波面</span><span class="tex" data-tex="k\eta = \varepsilon\cos\theta + \varepsilon^2 B_{22}\cos 2\theta + \varepsilon^3 B_{31}(\cos\theta - \cos 3\theta) + \varepsilon^4(B_{42}\cos 2\theta + B_{44}\cos 4\theta) + \varepsilon^5 B_{53}(\cos 3\theta - \cos\theta) + \varepsilon^5 B_{55}(\cos 5\theta - \cos\theta)"></span></div>
+      <div class="row"><span data-i18n="eqSpeed5">五阶相速</span><span class="tex" data-tex="c = \sqrt{g/k}\,\bigl(C_0 + \varepsilon^2 C_2 + \varepsilon^4 C_4\bigr),\qquad C_0 = \sqrt{\tanh kh}"></span></div>
+      <div class="row"><span data-i18n="eqUrsell">Ursell 数</span><span class="tex" data-tex="\mathrm{Ur} = \dfrac{HL^2}{h^3}"></span></div>
+    </div>
+    <p class="note"><span class="validity" id="validity"></span><span data-i18n="note">Stokes 理论，$\theta = kx - \omega t$，$a = H/2$，$\varepsilon = kH/2$，$g = 9.81\,\mathrm{m/s^2}$。五阶系数 $B_{ij}$、$C_i$ 取自 Fenton（1985），平均欧拉流速为零。漂流速度由水质点路径在若干周期内的平均位移求得。</span></p>
+    <noscript><p class="note">此演示需要启用 JavaScript。This demonstration requires JavaScript.</p></noscript>
+  </main>
+  <script type="module">
+    import { setupPage, slider, playback, node, text, mathText, richText, responsive, path, fmt, label } from '../common/demo.js';
+    import { G, waveNumber, stokes2, stokes5, stokesFactor, orbitAxes, breakingSteepness, depthClass } from '../common/wave-core.js';
+
+    const { t } = setupPage({
+      zh: { back:'← 返回卿景博的学术主页', eyebrow:'非线性波 · Stokes 波', title:'Stokes 波', intro:'按波陡逐阶修正线性解：波峰变尖、波谷变平，水质点每个周期都向前漂移一小段。可在二阶和五阶之间切换。', parameters:'波浪参数',
+        height:'波高', period:'周期', depth:'水深', reset:'重置', pause:'暂停', play:'播放', order:'阶数', order2:'二阶', order5:'五阶', orderName:{ 2:'二阶', 5:'五阶' },
+        profileTitle:'波面形状', profileNote:'纵轴以波高归一化', linearRef:'线性波', secondRef:'二阶', fifthRef:'五阶',
+        pathTitle:'水质点的路径', pathNote:'位移按同一比例放大，路径加速播放',
+        pathLegend:'虚线是线性理论的闭合轨迹；左侧是漂流速度沿深度的分布，以水面值为 1。',
+        pathInvalid:(o) => `波谷出现次峰，${o}解在这组参数下不成立`, pathBreaking:'超过破碎极限，实际波浪会破碎', driftProfile:'漂流速度',
+        planeTitle:'水深与波高的参数平面', planeNote:'对数坐标，圆点为当前参数', zoneBreak:'超过破碎极限', zoneBump:'二阶波谷出现次峰，$a_2/a_1 > 1/4$', contour:'$a_2/a_1 = 0.05$', deepLabel:'深水', shallowLabel:'浅水', seabed:'海底',
+        wavelength:'波长', celerity:'相速', steep:'波陡', ratio:'二阶与一阶振幅比', crest:'波峰高度', drift:'水面漂流速度',
+        deep:'深水', intermediate:'过渡水深', shallow:'浅水', breakLimit:'，破碎极限 ', sameAsLinear:'与线性理论相同', vsLinear:(c, p, faster) => `比线性理论${faster ? '快' : '慢'} ${p}%（${c} m/s）`, troughSub:(v) => `波谷 $\\eta_t/H = ${v}$，线性为 ±0.5`, ofCelerity:(p) => `相速的 ${p}%`,
+        eqSurface2:'二阶波面', eqDrift:'二阶漂流速度', eqSurface5:'五阶波面', eqSpeed5:'五阶相速', eqUrsell:'Ursell 数',
+        note:'Stokes 理论，$\\theta = kx - \\omega t$，$a = H/2$，$\\varepsilon = kH/2$，$g = 9.81\\,\\mathrm{m/s^2}$。五阶系数 $B_{ij}$、$C_i$ 取自 Fenton（1985），平均欧拉流速为零。漂流速度由水质点路径在若干周期内的平均位移求得。',
+        ok2:'二阶 Stokes 波', ok2Title:'a₂/a₁ ≤ 1/4，波谷处没有次峰。', ok5:'五阶 Stokes 波', ok5Title:'五阶波面从波峰到波谷单调下降，没有次峰。',
+        bump:'波谷出现次峰', bump2Title:'a₂/a₁ > 1/4：二阶项在波谷处造成次峰，二阶理论不再适用。', bump5Title:'五阶波面在波谷附近出现次峰，五阶理论不再适用；浅水长波要用椭圆余弦波理论。',
+        noRoot:'五阶解不存在', noRootTitle:'五阶色散关系在线性解附近没有根。', breaking:'超过破碎极限', breakingTitle:'H/L 超过 Miche 极限 0.142 tanh(kh)，实际波浪会破碎。' },
+      en: { back:'← Jingbo Qing · Academic homepage', eyebrow:'Nonlinear waves · Stokes', title:'Stokes waves', intro:'Stokes theory corrects the linear wave order by order: crests sharpen, troughs flatten, and water particles creep forward a little every period. Switch between second and fifth order.', parameters:'Wave parameters',
+        height:'Height', period:'Period', depth:'Depth', reset:'Reset', pause:'Pause', play:'Play', order:'Order', order2:'Second', order5:'Fifth', orderName:{ 2:'second-order', 5:'fifth-order' },
+        profileTitle:'Surface profile', profileNote:'Elevation scaled by the wave height', linearRef:'Linear', secondRef:'Second order', fifthRef:'Fifth order',
+        pathTitle:'Particle paths', pathNote:'Displacements share one exaggeration; paths play sped up',
+        pathLegend:'Dashed: the closed linear orbit. Left: drift velocity against depth, relative to its surface value.',
+        pathInvalid:(o) => `Trough bump: the ${o} solution does not hold here`, pathBreaking:'Beyond the breaking limit: a real wave would break', driftProfile:'Drift velocity',
+        planeTitle:'Depth–height plane', planeNote:'Logarithmic axes; the dot marks the current wave', zoneBreak:'Beyond the breaking limit', zoneBump:'Second-order trough bump, $a_2/a_1 > 1/4$', contour:'$a_2/a_1 = 0.05$', deepLabel:'deep', shallowLabel:'shallow', seabed:'seabed',
+        wavelength:'Wavelength', celerity:'Phase speed', steep:'Steepness', ratio:'Harmonic ratio', crest:'Crest height', drift:'Surface drift',
+        deep:'deep water', intermediate:'intermediate depth', shallow:'shallow water', breakLimit:', breaking limit ', sameAsLinear:'same as linear theory', vsLinear:(c, p, faster) => `${p}% ${faster ? 'faster' : 'slower'} than linear (${c} m/s)`, troughSub:(v) => `trough $\\eta_t/H = ${v}$; ±0.5 in linear theory`, ofCelerity:(p) => `${p}% of the phase speed`,
+        eqSurface2:'Second-order surface', eqDrift:'Second-order drift', eqSurface5:'Fifth-order surface', eqSpeed5:'Fifth-order speed', eqUrsell:'Ursell number',
+        note:'Stokes theory, $\\theta = kx - \\omega t$, $a = H/2$, $\\varepsilon = kH/2$, $g = 9.81\\,\\mathrm{m/s^2}$. Fifth-order coefficients $B_{ij}$, $C_i$ from Fenton (1985), with zero mean Eulerian current. Drift velocities are the mean displacement of particle paths over several periods.',
+        ok2:'Second-order Stokes', ok2Title:'a₂/a₁ ≤ 1/4: no bump in the trough.', ok5:'Fifth-order Stokes', ok5Title:'The fifth-order surface falls steadily from crest to trough.',
+        bump:'Trough bump', bump2Title:'a₂/a₁ > 1/4: the second harmonic raises a bump in the trough; second-order theory no longer applies.', bump5Title:'The fifth-order surface has a bump near the trough; fifth-order theory no longer applies, and long waves in shallow water need cnoidal theory.',
+        noRoot:'No fifth-order solution', noRootTitle:'The fifth-order dispersion relation has no root near the linear one.', breaking:'Beyond breaking limit', breakingTitle:'H/L exceeds the Miche limit 0.142 tanh(kh); a real wave would break.' },
+    }, 'wave-lab');
+
+    const schedule = (() => { let pending = false; return () => { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; update(); }); } }; })();
+    const H = slider('height', { min: 0.05, max: 3, format: (v) => `${v.toFixed(2)} m`, onInput: schedule });
+    const T = slider('period', { min: 2, max: 16, format: (v) => `${v.toFixed(1)} s`, onInput: schedule });
+    const D = slider('depth', { min: 1, max: 100, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const DEFAULTS = [2, 8, 10], DEFAULT_ORDER = 5;
+    const ROWS = [0, 0.25, 0.5, 0.75];
+    const LEVELS = Array.from({ length: 13 }, (_, i) => (i / 12) ** 2); // drift-profile depths z/h, denser near the surface
+    // RK4 steps per period. Drawn paths cover at least MIN_PATH_PERIODS and continue until they reach the right
+    // edge (at most MAX_PATH_PERIODS); the drift profile needs only a few periods.
+    const STEPS = 64, MIN_PATH_PERIODS = 12, MAX_PATH_PERIODS = 40, PROFILE_PERIODS = 4;
+    let order = DEFAULT_ORDER, w2, w5, sel, valid, breaking, tracks = [], driftProfile = [], clock;
+
+    const orderButtons = { 2: document.getElementById('order-2'), 5: document.getElementById('order-5') };
+    const setOrder = (n) => { order = n; for (const [k, b] of Object.entries(orderButtons)) b.setAttribute('aria-pressed', String(Number(k) === n)); };
+    orderButtons[2].addEventListener('click', () => { setOrder(2); update(); });
+    orderButtons[5].addEventListener('click', () => { setOrder(5); update(); });
+
+    // RK4 path of a particle whose linear orbit is centred at depth z0, starting at the top of that orbit.
+    function track(velocity, period, z0, B, periods) {
+      const dt = period / STEPS, n = STEPS * periods, xs = new Float64Array(n + 1), zs = new Float64Array(n + 1);
+      let x = 0, z = z0 + B;
+      xs[0] = x; zs[0] = z;
+      for (let i = 0; i < n; i++) {
+        const t0 = i * dt;
+        const [u1, v1] = velocity(x, z, t0);
+        const [u2, v2] = velocity(x + 0.5 * dt * u1, z + 0.5 * dt * v1, t0 + 0.5 * dt);
+        const [u3, v3] = velocity(x + 0.5 * dt * u2, z + 0.5 * dt * v2, t0 + 0.5 * dt);
+        const [u4, v4] = velocity(x + dt * u3, z + dt * v3, t0 + dt);
+        x += (dt / 6) * (u1 + 2 * u2 + 2 * u3 + u4);
+        z += (dt / 6) * (v1 + 2 * v2 + 2 * v3 + v4);
+        xs[i + 1] = x; zs[i + 1] = z;
+      }
+      return { xs, zs };
+    }
+    // Mean drift velocity: shift of the period-averaged position between the first and the last period.
+    function driftOf(xs, period) {
+      const periods = Math.round((xs.length - 1) / STEPS);
+      const mean = (a, b) => { let s = 0; for (let i = a; i < b; i++) s += xs[i]; return s / (b - a); };
+      return (mean((periods - 1) * STEPS, periods * STEPS) - mean(0, STEPS)) / ((periods - 1) * period);
+    }
+
+    function update() {
+      const Hv = H.get(), Tv = T.get(), hv = D.get();
+      w2 = stokes2(Hv, Tv, hv);
+      w5 = stokes5(Hv, Tv, hv);
+      sel = order === 2 ? w2 : w5;
+      // Paths only where the chosen order still describes the wave: below the breaking limit and without a trough bump.
+      // (Beyond the limit the fifth-order series diverges and the particles fly off.)
+      breaking = Boolean(sel) && Hv / sel.L > breakingSteepness(sel.k * hv);
+      valid = !breaking && (order === 2 ? w2.ratio <= 0.25 : Boolean(w5) && !w5.bump);
+      tracks = []; driftProfile = [];
+      if (valid) {
+        const follow = (r, periods) => { const z0 = -r * hv, [A, B] = orbitAxes(w2.a, w2.k, hv, z0); return { z0, A, B, ...track(sel.velocity, Tv, z0, B, periods) }; };
+        tracks = ROWS.map((r) => follow(r, MAX_PATH_PERIODS));
+        driftProfile = LEVELS.map((r) => (r === 0 ? [0, driftOf(tracks[0].xs, Tv)] : [-r * hv, driftOf(follow(r, PROFILE_PERIODS).xs, Tv)]));
+      }
+      metrics();
+      [profile, paths, plane].forEach((p) => p.redraw());
+    }
+
+    function metrics() {
+      const set = (id, v) => richText(document.getElementById(id), v);
+      const Hv = w2.H, hv = w2.h, s = sel || w2;
+      const L = s.L, k = s.k, hL = hv / L, limit = breakingSteepness(k * hv);
+      set('m-L', fmt(L, 4)); set('m-L-sub', `$h/L = ${fmt(hL, 3)}$ · ${t[depthClass(hL)]}`);
+      set('m-c', fmt(s.c, 4));
+      set('m-c-sub', order === 2 ? t.sameAsLinear : sel ? t.vsLinear(fmt(w2.c, 4), fmt(Math.abs(100 * (sel.c / w2.c - 1)), 2), sel.c >= w2.c) : '');
+      set('m-ka', fmt((k * Hv) / 2, 3)); set('m-ka-sub', `$H/L = ${fmt(Hv / L, 3)}$${t.breakLimit}${fmt(limit, 3)}`);
+      set('m-r', fmt(w2.ratio, 3)); set('m-r-sub', `$\\mathrm{Ur} = ${fmt(w2.ursell, 3)}$`);
+      if (sel) { set('m-crest', fmt(sel.crest / Hv, 3)); set('m-crest-sub', t.troughSub(fmt(sel.trough / Hv, 3).replace('-', '−'))); }
+      else { set('m-crest', '—'); set('m-crest-sub', ''); }
+      const us = valid ? driftProfile[0][1] : NaN;
+      set('m-drift', valid ? fmt(us, 3) : '—'); set('m-drift-sub', valid ? t.ofCelerity(fmt((100 * us) / s.c, 2)) : '');
+      const v = document.getElementById('validity');
+      v.className = 'validity' + (breaking || !valid ? ' caution' : '');
+      if (breaking) { v.textContent = t.breaking; v.title = t.breakingTitle; }
+      else if (order === 5 && !w5) { v.textContent = t.noRoot; v.title = t.noRootTitle; }
+      else if (!valid) { v.textContent = t.bump; v.title = order === 2 ? t.bump2Title : t.bump5Title; }
+      else { v.textContent = order === 2 ? t.ok2 : t.ok5; v.title = order === 2 ? t.ok2Title : t.ok5Title; }
+    }
+
+    // Surface profile over two wavelengths, η/H against x/L: linear (dashed), second order (thin), fifth order (bold).
+    // Each curve is drawn against its own wavelength, so the fifth-order amplitude dispersion does not shift the picture.
+    const profileEl = document.getElementById('profile');
+    const PH = 220, PM = { left: 48, right: 14, top: 24, bottom: 40 }, YMIN = -0.65, YMAX = 1.05;
+    let pLayer = {};
+    const profile = responsive(profileEl, PH, (w) => {
+      profileEl.querySelector('g.root')?.remove();
+      if (!w2) return;
+      const root = node('g', { class: 'root' }, profileEl);
+      const pw = w - PM.left - PM.right, ph = PH - PM.top - PM.bottom;
+      const X = (x) => PM.left + (x / 2) * pw, Y = (y) => PM.top + ((YMAX - Math.min(Math.max(y, YMIN), YMAX)) / (YMAX - YMIN)) * ph;
+      [0, 0.5, 1, 1.5, 2].forEach((v) => { node('line', { x1: X(v), x2: X(v), y1: PM.top, y2: PM.top + ph, class: 'grid' }, root); text(root, X(v), PH - 21, label(v), { 'text-anchor': 'middle' }); });
+      [-0.5, 0, 0.5, 1].forEach((v) => { node('line', { x1: PM.left, x2: PM.left + pw, y1: Y(v), y2: Y(v), class: 'grid' }, root); text(root, PM.left - 6, Y(v) + 4, label(v), { 'text-anchor': 'end' }); });
+      node('line', { x1: PM.left, x2: PM.left + pw, y1: PM.top + ph, y2: PM.top + ph, class: 'axis' }, root);
+      node('line', { x1: PM.left, x2: PM.left, y1: PM.top, y2: PM.top + ph, class: 'axis' }, root);
+      node('line', { x1: PM.left, x2: PM.left + pw, y1: Y(0), y2: Y(0), stroke: '#b9cdca', 'stroke-dasharray': '4 5' }, root);
+      mathText(root, PM.left + pw, PH - 5, '$x/L$', { 'text-anchor': 'end', class: 'label' });
+      mathText(root, 4, PM.top - 10, '$\\eta/H$', { class: 'label' });
+      pLayer = { X, Y, bottom: PM.top + ph,
+        fill: node('path', { fill: '#e6f2ee' }, root),
+        lin: node('path', { fill: 'none', stroke: '#8fb0a8', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, root),
+        // Fixed colours per order (second orange, fifth teal). The selected order is drawn heavier and underneath,
+        // so the thin line of the other order stays visible where the two nearly coincide.
+        second: node('path', { fill: 'none', stroke: '#b0723a', 'stroke-width': order === 2 ? 2.4 : 1.3 }, root),
+        fifth: node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': order === 5 ? 2.4 : 1.3 }, root) };
+      if (order === 5) root.insertBefore(pLayer.fifth, pLayer.second);
+      drawProfile(clock ? clock.time : 0);
+    });
+    function drawProfile(time) {
+      if (!pLayer.lin) return;
+      const { X, Y, bottom } = pLayer, n = 320, xs = [], yl = [], y2 = [], y5 = [];
+      for (let i = 0; i <= n; i++) {
+        const xl = (2 * i) / n, th = 2 * Math.PI * xl - w2.omega * time;
+        xs.push(X(xl)); yl.push(Y(0.5 * Math.cos(th))); y2.push(Y(0.5 * (Math.cos(th) + w2.ratio * Math.cos(2 * th))));
+        if (w5) y5.push(Y(w5.surface(th) / w5.H));
+      }
+      const l2 = path(xs, y2), l5 = w5 ? path(xs, y5) : '';
+      pLayer.lin.setAttribute('d', path(xs, yl));
+      pLayer.second.setAttribute('d', l2);
+      pLayer.fifth.setAttribute('d', l5);
+      const filled = order === 5 && w5 ? l5 : l2;
+      pLayer.fill.setAttribute('d', `${filled}L${xs[n]},${bottom}L${xs[0]},${bottom}Z`);
+    }
+
+    // Particle paths at four depths, with the drift-velocity profile against the depth axis on the left. One
+    // exaggeration E for all displacements, so drift and orbit keep their true ratio.
+    const pathsEl = document.getElementById('paths');
+    const QH = 300, QM = { left: 52, right: 14, top: 48, bottom: 30 }, SURFACE_ORBIT = 30, HOLD = 1.5;
+    let qLayer = {};
+    const paths = responsive(pathsEl, QH, (w) => {
+      pathsEl.querySelector('g.root')?.remove();
+      if (!w2) return;
+      const root = node('g', { class: 'root' }, pathsEl);
+      const hv = w2.h, yTop = QM.top, yBed = QH - QM.bottom, Zm = (z) => yTop + (-z / hv) * (yBed - yTop);
+      const coth = w2.kh > 30 ? 1 : 1 / Math.tanh(w2.kh);
+      const E = SURFACE_ORBIT / (w2.a * coth);
+      const profileWidth = Math.min(170, Math.max(80, 0.22 * w)), xp0 = QM.left;
+      const x0 = xp0 + profileWidth + 30 + SURFACE_ORBIT;
+      if (valid) {
+        const us0 = driftProfile[0][1];
+        const XP = (u) => xp0 + Math.max(0, u / us0) * (profileWidth - 24);
+        const pts = driftProfile.map(([z, u]) => [XP(u), Zm(z)]);
+        node('path', { d: `${path(pts.map((p) => p[0]), pts.map((p) => p[1]))}L${xp0},${yBed}L${xp0},${yTop}Z`, fill: '#eef5f2' }, root);
+        node('path', { d: path(pts.map((p) => p[0]), pts.map((p) => p[1])), fill: 'none', stroke: '#216b68', 'stroke-width': 1.5 }, root);
+        tracks.forEach((tr) => {
+          const x1 = XP(driftOf(tr.xs, w2.T)), y = Zm(tr.z0);
+          if (x1 - xp0 < 8) return;
+          node('line', { x1: xp0, x2: x1 - 5, y1: y, y2: y, stroke: '#216b68', 'stroke-width': 1.2 }, root);
+          node('path', { d: `M${x1},${y}L${x1 - 6},${y - 3.5}L${x1 - 6},${y + 3.5}Z`, fill: '#216b68' }, root);
+        });
+        text(root, xp0 + 8, yTop - 26, t.driftProfile, { class: 'label' });
+      }
+      node('line', { x1: QM.left, x2: w - QM.right, y1: yTop, y2: yTop, stroke: '#b9cdca', 'stroke-dasharray': '4 5' }, root);
+      node('line', { x1: QM.left, x2: w - QM.right, y1: yBed, y2: yBed, stroke: '#9fb3ad', 'stroke-width': 1.5 }, root);
+      for (let x = QM.left; x < w - QM.right; x += 9) node('line', { x1: x, x2: x - 6, y1: yBed, y2: yBed + 7, stroke: '#c9d3cf' }, root);
+      text(root, w - QM.right - 4, yBed - 6, t.seabed, { 'text-anchor': 'end' });
+      node('line', { x1: QM.left, x2: QM.left, y1: QM.top - 30, y2: yBed, class: 'axis' }, root);
+      text(root, QM.left - 8, yTop + 4, '0', { 'text-anchor': 'end' });
+      text(root, QM.left - 8, Zm(-hv / 2) + 4, `−${label(hv / 2)}`, { 'text-anchor': 'end' });
+      text(root, QM.left - 8, yBed + 4, `−${label(hv)}`, { 'text-anchor': 'end' });
+      mathText(root, 6, 14, '$z$ (m)', { class: 'label' });
+      if (!valid) text(root, QM.left + (w - QM.left - QM.right) / 2, (yTop + yBed) / 2, breaking ? t.pathBreaking : t.pathInvalid(t.orderName[order]), { 'text-anchor': 'middle', class: 'label' });
+      // Enough periods for the surface path to reach the right edge (at least MIN_PATH_PERIODS); clipped there.
+      const perPeriod = valid ? E * driftProfile[0][1] * w2.T : 0;
+      const periods = Math.min(MAX_PATH_PERIODS, Math.max(MIN_PATH_PERIODS, Math.ceil((w - QM.right - x0) / Math.max(perPeriod, 1e-9))));
+      const clip = node('clipPath', { id: 'paths-clip' }, root);
+      node('rect', { x: xp0 + profileWidth + 8, y: 0, width: Math.max(0, w - QM.right - xp0 - profileWidth - 8), height: QH }, clip);
+      const inside = node('g', { 'clip-path': 'url(#paths-clip)' }, root);
+      const items = tracks.map((tr) => {
+        node('ellipse', { cx: x0, cy: Zm(tr.z0), rx: Math.max(E * tr.A, 0.4), ry: Math.max(E * tr.B, 0.4), fill: 'none', stroke: '#9cc3b9', 'stroke-width': 1, 'stroke-dasharray': '3 3' }, inside);
+        const n = periods * STEPS, xs = new Array(n + 1), ys = new Array(n + 1);
+        for (let i = 0; i <= n; i++) { xs[i] = x0 + E * tr.xs[i]; ys[i] = Zm(tr.z0) - E * (tr.zs[i] - tr.z0); }
+        return { xs, ys, n, line: node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 1.3 }, inside), dot: node('circle', { r: tr.z0 === 0 ? 3.6 : 3.2, fill: tr.z0 === 0 ? '#183846' : '#216b68' }, inside) };
+      });
+      qLayer = { items, loop: Math.min(20, periods) }; // about one period per second, at most 20 s per loop
+      drawPaths(clock ? clock.time : 0);
+    });
+    function drawPaths(time) {
+      if (!qLayer.items) return;
+      // Each loop traces the whole path, then holds it briefly; at time 0 (paused) the full path shows.
+      const { loop } = qLayer;
+      const progress = time === 0 ? 1 : Math.min(1, (time % (loop + HOLD)) / loop);
+      qLayer.items.forEach((it) => {
+        const m = Math.max(1, Math.round(progress * it.n));
+        it.line.setAttribute('d', path(it.xs.slice(0, m + 1), it.ys.slice(0, m + 1)));
+        it.dot.setAttribute('cx', it.xs[m].toFixed(1));
+        it.dot.setAttribute('cy', it.ys[m].toFixed(1));
+      });
+    }
+
+    // Depth–height plane, h/(gT²) against H/(gT²): Miche breaking limit, contours of the second-order a2/a1, depth classes.
+    const planeEl = document.getElementById('plane');
+    const RH = 290, RM = { left: 56, right: 14, top: 32, bottom: 44 }, XR = [3e-4, 3], YR = [1e-5, 0.05];
+    const decade = (e) => (e === 0 ? '1' : `$10^{${String(e).replace('-', '−')}}$`);
+    // Curves in dimensionless form: with T = 1 s, h = x·g and H = y·g.
+    const curve = (fn) => {
+      const pts = [];
+      for (let i = 0; i <= 240; i++) {
+        const x = XR[0] * (XR[1] / XR[0]) ** (i / 240), h = x * G, k = waveNumber(2 * Math.PI, h);
+        pts.push([x, fn(k, k * h) / G]);
+      }
+      return pts;
+    };
+    const breakingCurve = curve((k, kh) => breakingSteepness(kh) * (2 * Math.PI) / k);
+    const ratioCurve = (r) => curve((k, kh) => (8 * r) / (k * stokesFactor(kh)));
+    const r25 = ratioCurve(0.25), r05 = ratioCurve(0.05);
+    const depthLine = (khValue) => (khValue * Math.tanh(khValue)) / (4 * Math.PI * Math.PI);
+    const plane = responsive(planeEl, RH, (w) => {
+      planeEl.querySelector('g.root')?.remove();
+      if (!w2) return;
+      const root = node('g', { class: 'root' }, planeEl);
+      const pw = w - RM.left - RM.right, ph = RH - RM.top - RM.bottom;
+      const lx = (x) => Math.log10(x), clamp = (v, r) => Math.min(Math.max(v, r[0]), r[1]);
+      const X = (x) => RM.left + ((lx(x) - lx(XR[0])) / (lx(XR[1]) - lx(XR[0]))) * pw;
+      const Y = (y) => RM.top + ((lx(YR[1]) - lx(Math.max(y, 1e-12))) / (lx(YR[1]) - lx(YR[0]))) * ph;
+      const line = (pts) => path(pts.map((p) => X(p[0])), pts.map((p) => Y(p[1])));
+      // Curves and regions are clipped to the plot area.
+      const clip = node('clipPath', { id: 'plane-clip' }, root);
+      node('rect', { x: RM.left, y: RM.top, width: pw, height: ph }, clip);
+      const inside = node('g', { 'clip-path': 'url(#plane-clip)' }, root);
+      // Breaking region above the Miche curve.
+      node('path', { d: `${line(breakingCurve)}L${X(XR[1])},${Y(YR[1])}L${X(XR[0])},${Y(YR[1])}Z`, fill: '#eef1ef' }, inside);
+      // Second-order trough-bump region: between a2/a1 = 1/4 and the breaking curve, where the former lies lower.
+      const lower = r25.filter((p, i) => p[1] < breakingCurve[i][1]);
+      if (lower.length > 1) {
+        const upper = breakingCurve.slice(0, lower.length).reverse();
+        node('path', { d: `${line(lower)}${upper.map((p) => `L${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('')}Z`, fill: '#f7edda' }, inside);
+      }
+      for (let e = -3; e <= 0; e++) { node('line', { x1: X(10 ** e), x2: X(10 ** e), y1: RM.top, y2: RM.top + ph, class: 'grid' }, root); mathText(root, X(10 ** e), RH - 22, decade(e), { 'text-anchor': 'middle' }); }
+      for (let e = -4; e <= -2; e++) { node('line', { x1: RM.left, x2: RM.left + pw, y1: Y(10 ** e), y2: Y(10 ** e), class: 'grid' }, root); mathText(root, RM.left - 6, Y(10 ** e) + 4, decade(e), { 'text-anchor': 'end' }); }
+      // Depth classes: h/L = 1/20 and 1/2.
+      const xs = depthLine(Math.PI / 10), xd = depthLine(Math.PI);
+      [xs, xd].forEach((x) => node('line', { x1: X(x), x2: X(x), y1: RM.top, y2: RM.top + ph, stroke: '#b7c4bf', 'stroke-dasharray': '2 4' }, root));
+      text(root, X(xs), RM.top - 8, t.shallowLabel, { 'text-anchor': 'middle' });
+      text(root, X(xd), RM.top - 8, t.deepLabel, { 'text-anchor': 'middle' });
+      node('path', { d: line(r05), fill: 'none', stroke: '#9cc3b9', 'stroke-width': 1.2, 'stroke-dasharray': '5 4' }, inside);
+      if (lower.length > 1) node('path', { d: line(lower), fill: 'none', stroke: '#b0723a', 'stroke-width': 1.4 }, inside);
+      node('path', { d: line(breakingCurve), fill: 'none', stroke: '#5a6c69', 'stroke-width': 1.6 }, inside);
+      node('line', { x1: RM.left, x2: RM.left + pw, y1: RM.top + ph, y2: RM.top + ph, class: 'axis' }, root);
+      node('line', { x1: RM.left, x2: RM.left, y1: RM.top, y2: RM.top + ph, class: 'axis' }, root);
+      mathText(root, RM.left + pw, RH - 5, '$h/(gT^2)$', { 'text-anchor': 'end', class: 'label' });
+      mathText(root, 4, RM.top - 8, '$H/(gT^2)$', { class: 'label' });
+      const gT2 = G * w2.T * w2.T;
+      node('circle', { cx: X(clamp(w2.h / gT2, XR)), cy: Y(clamp(w2.H / gT2, YR)), r: 5.5, fill: '#183846', stroke: '#ffffff', 'stroke-width': 1.5 }, root);
+    });
+
+    clock = playback(document.getElementById('play'), t, (time) => { drawProfile(time); drawPaths(time); });
+    document.getElementById('reset').addEventListener('click', () => { H.set(DEFAULTS[0]); T.set(DEFAULTS[1]); D.set(DEFAULTS[2]); setOrder(DEFAULT_ORDER); update(); clock.reset(); });
+    H.set(DEFAULTS[0]); T.set(DEFAULTS[1]); D.set(DEFAULTS[2]); setOrder(DEFAULT_ORDER);
+    update();
+  </script>
+</body>
+</html>

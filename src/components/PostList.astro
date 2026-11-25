@@ -1,0 +1,57 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import { categories } from '../lib/categories';
+import { path, text, dateLabel, typeLabel, postURL, paperFor, type Lang } from '../lib/site';
+interface Props { entries: CollectionEntry<'posts'>[]; lang: Lang; filters?: boolean; }
+const { entries, lang, filters = true } = Astro.props;
+const papers = await getCollection('publications');
+const filterTypes = ['all', ...categories.map(c => c.id).filter(type => entries.some(p => p.data.type === type))];
+---
+<div data-feed data-lang={lang}>
+  {filters && <div class="feed-tools" data-filters hidden>
+    <div class="filter-buttons" role="group" aria-label={text(lang, '筛选内容', 'Filter content')}>
+      {filterTypes.map(type => <button type="button" data-filter={type} aria-pressed={type === 'all' ? 'true' : 'false'}>{type === 'all' ? text(lang, '全部', 'All') : typeLabel(type, lang)}<span>{type === 'all' ? entries.length : entries.filter(p => p.data.type === type).length}</span></button>)}
+    </div>
+    <p class="filter-status sr-only" role="status" aria-live="polite" data-filter-status></p>
+  </div>}
+  <div class="post-list">
+    {entries.map(post => {
+      const journal = paperFor(post, papers)?.data.journal;
+      return <article class:list={['post-row', { 'is-text': !post.data.cover }]} data-type={post.data.type}>
+        {post.data.cover && <a href={path(postURL(post))} class="post-cover" tabindex="-1" aria-hidden="true">
+          <Image src={post.data.cover} alt="" widths={[480, 960]} sizes="(max-width: 480px) 100vw, 240px" loading="lazy" />
+        </a>}
+        <div class="post-copy">
+          <div class="post-meta"><span class="post-type">{typeLabel(post.data.type, lang)}</span><span class="meta-dot" aria-hidden="true">·</span>{journal && <><span class="post-journal">{journal}</span><span class="meta-dot" aria-hidden="true">·</span></>}<time datetime={post.data.datePrecision === 'year' ? String(post.data.date.getUTCFullYear()) : post.data.date.toISOString().slice(0, 10)}>{dateLabel(post, lang)}</time>{post.data.pinned && <span class="pinned">{text(lang, '精选', 'Selected')}</span>}</div>
+          <h3><a href={path(postURL(post))}>{post.data.title}</a></h3>
+          <p>{post.data.summary}</p>
+          <a href={path(postURL(post))} class="text-link">{text(lang, '查看详情', 'Explore this work')} <span aria-hidden="true">→</span></a>
+        </div>
+      </article>;
+    })}
+  </div>
+  <p class="empty-state" data-empty hidden>{text(lang, '这个分类暂时没有公开内容。', 'There are no published entries in this category yet.')}</p>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-feed]').forEach(feed => {
+    const tools = feed.querySelector<HTMLElement>('[data-filters]');
+    if (!tools) return;
+    tools.hidden = false;
+    const buttons = [...feed.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+    const entries = [...feed.querySelectorAll<HTMLElement>('[data-type]')];
+    const select = (type: string) => {
+      let count = 0;
+      entries.forEach(entry => { entry.hidden = type !== 'all' && entry.dataset.type !== type; if (!entry.hidden) count++; });
+      // Mark the last row still shown, so it can drop its bottom line like the last row of the full list.
+      const shown = entries.filter(entry => !entry.hidden);
+      entries.forEach(entry => entry.classList.toggle('is-last', entry === shown[shown.length - 1]));
+      buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.filter === type)));
+      const empty = feed.querySelector<HTMLElement>('[data-empty]');
+      if (empty) empty.hidden = count > 0;
+      const status = feed.querySelector<HTMLElement>('[data-filter-status]');
+      if (status) status.textContent = feed.dataset.lang === 'zh' ? `显示 ${count} 项内容` : `${count} entries shown`;
+    };
+    buttons.forEach(button => button.addEventListener('click', () => select(button.dataset.filter || 'all')));
+  });
+</script>

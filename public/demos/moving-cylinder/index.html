@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="A vertical cylinder moving in surge in irregular waves: the wave force identified from the surface at a few points on its waterline, with and without the measured motion, compared with the exact linear force.">
+  <title>运动圆柱的波浪荷载识别 · 卿景博</title>
+  <link rel="stylesheet" href="../common/katex/katex.min.css">
+  <link rel="stylesheet" href="../common/demo.css">
+  <script src="../common/katex/katex.min.js"></script>
+  <style>
+    .legend > .waveonly { color:#8b9a96; }
+    .legend > .waveonly::before { border-top-style:dotted; }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <a class="back" href="../../zh/updates/floating-cylinder-loads/" data-back data-i18n="back">← 返回卿景博的学术主页</a>
+        <p class="eyebrow" data-i18n="eyebrow">波浪与结构 · 荷载识别</p>
+        <h1 data-i18n="title">运动圆柱的波浪荷载识别</h1>
+        <p class="intro" data-i18n="intro">圆柱在不规则波中沿波浪方向往复运动，水线上的波面除了入射波和绕射波，还包含圆柱自身激起的波。这里比较两种识别：只用测点波面，以及同时使用测点波面和圆柱的运动。</p>
+      </div>
+      <nav class="languages" aria-label="Language"><a href="?lang=zh" data-language="zh">中文</a><a href="?lang=en" data-language="en">English</a></nav>
+    </header>
+
+    <section class="controls" data-i18n-label="parameters">
+      <div><label for="hs"><span><span data-i18n="hs">有效波高</span> <span data-tex="H_s"></span></span><output id="hs-output" for="hs"></output></label><input id="hs" type="range" min="0.5" max="8" step="0.1" value="3"></div>
+      <div><label for="tp"><span><span data-i18n="tp">谱峰周期</span> <span data-tex="T_p"></span></span><output id="tp-output" for="tp"></output></label><input id="tp" type="range" min="4" max="16" step="0.1" value="8"></div>
+      <div><label for="depth"><span><span data-i18n="depth">水深</span> <span data-tex="h"></span></span><output id="depth-output" for="depth"></output></label><input id="depth" type="range"></div>
+      <div><label for="diameter"><span><span data-i18n="diameter">圆柱直径</span> <span data-tex="D"></span></span><output id="diameter-output" for="diameter"></output></label><input id="diameter" type="range"></div>
+      <div><label for="points"><span><span data-i18n="points">测点数</span> <span data-tex="W"></span></span><output id="points-output" for="points"></output></label><input id="points" type="range" min="1" max="12" step="1" value="2"></div>
+      <div><label for="tn"><span><span data-i18n="tn">纵荡固有周期</span> <span data-tex="T_n"></span></span><output id="tn-output" for="tn"></output></label><input id="tn" type="range"></div>
+    </section>
+    <div class="toolbar">
+      <span class="spacer"></span>
+      <button type="button" id="reseed" data-i18n="reseed">换一组随机相位</button>
+      <button type="button" id="play"></button>
+      <button type="button" id="reset" data-i18n="reset">重置</button>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="planTitle">运动的圆柱与测点</h2></div>
+        <svg id="plan" role="img" data-i18n-label="planTitle"></svg>
+        <div class="panel-foot" id="plan-foot"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="recordTitle">测点波面与纵荡位移</h2><span class="panel-note" id="record-note"></span></div>
+        <svg id="records" role="img" data-i18n-label="recordTitle"></svg>
+        <div class="panel-foot" data-i18n="recordFoot">右端为当前时刻。各测点的波面按同一比例绘制，左侧标注测点从迎浪点量起的角度；最下方为圆柱的纵荡位移。</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="forceTitle">波浪力时程</h2><span class="panel-note" data-i18n="nowNote">右端为当前时刻</span></div>
+      <div class="legend"><span class="theory" data-i18n="exactLegend">真实波浪力</span><span class="estimate" data-i18n="withLegend">由测点波面和运动识别</span><span class="waveonly" data-i18n="withoutLegend">只用测点波面</span></div>
+      <svg id="force" role="img" data-i18n-label="forceTitle"></svg>
+    </div>
+
+    <dl class="metrics" aria-live="polite">
+      <div><dt><span data-i18n="errWith">计入运动</span> <span data-tex="\mathrm{NRMSE}"></span></dt><dd><span id="m-eb"></span><small>%</small><span class="sub" id="m-eb-sub"></span></dd></div>
+      <div><dt><span data-i18n="errWithout">只用波面</span> <span data-tex="\mathrm{NRMSE}"></span></dt><dd><span id="m-ea"></span><small>%</small><span class="sub" id="m-ea-sub"></span></dd></div>
+      <div><dt><span data-i18n="motion">纵荡位移</span> <span data-tex="\sigma_x"></span></dt><dd><span id="m-x"></span><small>m</small><span class="sub" id="m-x-sub"></span></dd></div>
+      <div><dt><span data-i18n="fmax">最大波浪力</span> <span data-tex="F_{\max}"></span></dt><dd><span id="m-F"></span><small id="m-F-unit"></small><span class="sub" id="m-F-sub"></span></dd></div>
+      <div><dt><span data-i18n="size">相对尺度</span> <span data-tex="D/L_p"></span></dt><dd><span id="m-DL"></span><span class="sub" id="m-DL-sub"></span></dd></div>
+      <div><dt><span data-i18n="wavelength">谱峰波长</span> <span data-tex="L_p"></span></dt><dd><span id="m-L"></span><small>m</small><span class="sub" id="m-L-sub"></span></dd></div>
+    </dl>
+    <div class="equations">
+      <div class="row"><span data-i18n="eqMotion">运动方程</span><span class="tex" data-tex="\bigl[K-\omega^2(M+A)-i\omega B\bigr]X = F_{\mathrm{ex}},\qquad U = -i\omega X,\qquad F = F_{\mathrm{ex}} + f_R\,U"></span></div>
+      <div class="row"><span data-i18n="eqSurface">水线波面</span><span class="tex" data-tex="\eta(a,\theta) = \eta_D(a,\theta) + e_R\,U\cos\theta"></span></div>
+      <div class="row"><span data-i18n="eqWith">计入运动</span><span class="tex" data-tex="\hat F = G\sum_{w=1}^{W} c_w\,\eta_w + \Bigl(f_R - G\,e_R\sum_{w=1}^{W} c_w\cos\theta_w\Bigr)U"></span></div>
+      <div class="row"><span data-i18n="eqWithout">只用波面</span><span class="tex" data-tex="\hat F_\eta = G\sum_{w=1}^{W} c_w\,\eta_w,\qquad G = -\dfrac{\pi\rho g a\tanh kh}{k}"></span></div>
+      <div class="row"><span data-i18n="eqRadiation">辐射势</span><span class="tex" data-tex="\phi_R = U\cos\theta\Bigl[\alpha_0 H_1(kr)\cosh k(z+h) + \sum_{n\ge 1}\alpha_n K_1(k_n r)\cos k_n(z+h)\Bigr]"></span></div>
+      <div class="row"><span data-i18n="eqError">误差</span><span class="tex" data-tex="\mathrm{NRMSE} = \dfrac{\mathrm{rms}(\hat F - F)}{\max F - \min F}"></span></div>
+    </div>
+    <p class="note"><span class="validity" id="validity"></span><span data-i18n="note">线性势流。</span></p>
+    <noscript><p class="note">此演示需要启用 JavaScript。This demonstration requires JavaScript.</p></noscript>
+  </main>
+  <script type="module">
+    import { setupPage, slider, playback, node, text, mathText, richText, responsive, path, fmt, label, ticks, steadySpan, FINE_STEPS } from '../common/demo.js';
+    import { G, waveNumber, depthClass, jonswap, random, fft } from '../common/wave-core.js';
+    import { macCamyFuchs, runupCoefficients } from '../common/cylinder-core.js';
+    import { surgeRadiation, cmul, cdiv } from '../common/surge-core.js';
+
+    const { t } = setupPage({
+      zh: { back:'← 返回卿景博的学术主页', eyebrow:'波浪与结构 · 荷载识别', title:'运动圆柱的波浪荷载识别', intro:'圆柱在不规则波中沿波浪方向往复运动，水线上的波面除了入射波和绕射波，还包含圆柱自身激起的波。这里比较两种识别：只用测点波面，以及同时使用测点波面和圆柱的运动。', parameters:'波浪、圆柱与测点参数',
+        hs:'有效波高', tp:'谱峰周期', depth:'水深', diameter:'圆柱直径', points:'测点数', tn:'纵荡固有周期', reseed:'换一组随机相位', reset:'重置', pause:'暂停', play:'播放',
+        planTitle:'运动的圆柱与测点', waves:'波浪',
+        planFoot:(m) => `俯视；波浪从左向右传播。圆柱沿波浪方向往复运动，${m > 1 ? `位移放大 ${m} 倍` : '位移按实际比例绘制'}。圆柱外侧的曲线表示水线上的波面高程（已放大）：虚线圆为静水位，曲线在其外为波峰、在其内为波谷；测点随圆柱一起运动。`,
+        recordTitle:'测点波面与纵荡位移', recordNote:(e, x) => `每行满格：波面 ±${e} m，位移 ±${x} m`,
+        recordFoot:'右端为当前时刻。各测点的波面按同一比例绘制，左侧标注测点从迎浪点量起的角度；最下方为圆柱的纵荡位移。',
+        forceTitle:'波浪力时程', nowNote:'右端为当前时刻', exactLegend:'真实波浪力', withLegend:'由测点波面和运动识别', withoutLegend:'只用测点波面',
+        errWith:'计入运动', errWithout:'只用波面', motion:'纵荡位移', fmax:'最大波浪力', size:'相对尺度', wavelength:'谱峰波长',
+        pointsSub:(W) => `测点数 $W = ${W}$`, withoutSub:'不计圆柱运动', motionSub:(r) => `$\\sigma_x/H_s = ${r}$`, recordSub:(n) => `记录长约 ${n} 个谱峰周期`,
+        deep:'深水', intermediate:'过渡水深', shallow:'浅水',
+        eqMotion:'运动方程', eqSurface:'水线波面', eqWith:'计入运动', eqWithout:'只用波面', eqRadiation:'辐射势', eqError:'误差',
+        note:'线性势流。为了得到解析解，圆柱贯穿整个水深，只沿波浪方向纵荡；质量取排开水的质量 $\\rho\\pi a^2h$，系泊刚度按纵荡固有周期 $T_n$ 给出（附加质量按 $\\rho\\pi a^2h$ 估计）。不规则波为长峰 JONSWAP 谱，$\\gamma = 3.3$。测点从迎浪点起沿圆周等间距布置，随圆柱一起运动；$c_w$ 是水线级数最小范数拟合给出的测点权重，$f_R$、$e_R$ 是单位运动速度对应的辐射力和水线波面系数，辐射势取 48 个衰减模态。测点值和运动数据都没有测量误差；识别对整段记录逐个频率进行，不含分段傅里叶变换带来的延迟。',
+        linear:'线性叠加', linearTitle:'Hs/Lp ≤ 0.04 且 Hs/h ≤ 0.4。', caution:'波陡较大', cautionTitle:'Hs/Lp > 0.04 或 Hs/h > 0.4：实际海况中非线性和破碎会比较明显。' },
+      en: { back:'← Jingbo Qing · Academic homepage', eyebrow:'Waves and structures · Load identification', title:'Wave load on a moving cylinder', intro:'A cylinder moves back and forth in irregular waves, so the surface on its waterline contains, besides the incident and diffracted waves, the waves the cylinder itself generates. Two identifications are compared: from the surface at the points alone, and from the surface together with the motion of the cylinder.', parameters:'Wave, cylinder and point parameters',
+        hs:'Significant height', tp:'Peak period', depth:'Depth', diameter:'Cylinder diameter', points:'Points', tn:'Surge natural period', reseed:'New random phases', reset:'Reset', pause:'Pause', play:'Play',
+        planTitle:'The moving cylinder and its points', waves:'waves',
+        planFoot:(m) => `Plan view; waves travel from left to right. The cylinder moves back and forth along the waves, ${m > 1 ? `with the displacement magnified ${m} times` : 'drawn to scale'}. The curve outside the cylinder shows the surface elevation along the waterline (exaggerated): the dashed circle is the still-water level, with crests outside it and troughs inside; the points move with the cylinder.`,
+        recordTitle:'Surface at the points and surge', recordNote:(e, x) => `Full scale per row: surface ±${e} m, displacement ±${x} m`,
+        recordFoot:'Now is at the right end. The surface at every point is drawn to the same scale and labelled by its angle from the front point; the bottom row is the surge displacement of the cylinder.',
+        forceTitle:'Wave force over time', nowNote:'Now is at the right end', exactLegend:'Exact force', withLegend:'From the points and the motion', withoutLegend:'From the points alone',
+        errWith:'With motion', errWithout:'Surface only', motion:'Surge', fmax:'Largest force', size:'Relative size', wavelength:'Peak wavelength',
+        pointsSub:(W) => `$W = ${W}$ points`, withoutSub:'motion ignored', motionSub:(r) => `$\\sigma_x/H_s = ${r}$`, recordSub:(n) => `record of about ${n} peak periods`,
+        deep:'deep water', intermediate:'intermediate depth', shallow:'shallow water',
+        eqMotion:'Motion', eqSurface:'Waterline', eqWith:'With motion', eqWithout:'Surface only', eqRadiation:'Radiation', eqError:'Error',
+        note:'Linear potential flow. To keep an exact solution, the cylinder spans the full depth and moves only in surge along the waves; its mass equals the displaced mass $\\rho\\pi a^2h$, and the mooring stiffness follows from the surge natural period $T_n$ (with the added mass taken as $\\rho\\pi a^2h$). The irregular waves are long-crested with a JONSWAP spectrum, $\\gamma = 3.3$. The points are evenly spaced from the front point and move with the cylinder; $c_w$ are the point weights from the minimum-norm fit of the waterline series, $f_R$ and $e_R$ are the radiation force and waterline coefficient per unit velocity, and the radiation potential uses 48 evanescent modes. The point values and the motion carry no measurement error, and the identification works frequency by frequency on the whole record, without the delay of segment-wise Fourier transforms.',
+        linear:'Linear superposition', linearTitle:'Hs/Lp ≤ 0.04 and Hs/h ≤ 0.4.', caution:'Steep sea', cautionTitle:'Hs/Lp > 0.04 or Hs/h > 0.4: nonlinearity and breaking would be noticeable in a real sea.' },
+    }, 'floating-cylinder-loads');
+
+    const RHO = 1025, GAMMA = 3.3, N = 4096, PER_PEAK = 32, MODES = 48, CURVE = 360, MAX_MODES = 64;
+    const schedule = (() => { let pending = false; return () => { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; compute(); }); } }; })();
+    const Hs = slider('hs', { min: 0.5, max: 8, format: (v) => `${v.toFixed(1)} m`, onInput: schedule });
+    const Tp = slider('tp', { min: 4, max: 16, format: (v) => `${v.toFixed(1)} s`, onInput: schedule });
+    const Dp = slider('depth', { min: 5, max: 100, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const Dc = slider('diameter', { min: 1, max: 40, log: true, format: (v) => `${fmt(v, 3)} m`, onInput: schedule });
+    const Wn = slider('points', { min: 1, max: 12, format: (v) => `${Math.round(v)}`, onInput: schedule });
+    const Tn = slider('tn', { min: 3, max: 200, log: true, format: (v) => `${fmt(v, 3)} s`, onInput: schedule });
+    const DEFAULTS = [3, 8, 20, 12, 2, 60];
+    let seed = 2026, hydro = null, rec = null, axes = {}, clock = null;
+
+    const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+    const scale = (a, s) => [a[0] * s, a[1] * s];
+
+    // Points evenly spaced from the front point; θ is measured from the direction of wave travel, β = π − θ.
+    const pointAngles = (W) => Array.from({ length: W }, (_, w) => Math.PI - (2 * Math.PI * w) / W);
+    // Gauss–Jordan elimination with partial pivoting; the systems here are at most 12 × 12.
+    function solve(K, rhs) {
+      const n = rhs.length, A = K.map((row, i) => [...row, rhs[i]]);
+      for (let c = 0; c < n; c++) {
+        let p = c;
+        for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+        [A[c], A[p]] = [A[p], A[c]];
+        for (let r = 0; r < n; r++) { if (r === c) continue; const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; }
+      }
+      return A.map((row, i) => row[n] / row[i]);
+    }
+    // Weights of the minimum-norm fit of the truncated waterline series (as in the fixed-cylinder demonstration):
+    // b_1 + b_{−1} = Σ_w c_w η_w with c = 2 K⁻¹ cos θ and K_wu = Σ_{v=−V..V} e^{iv(θ_w − θ_u)}.
+    function weights(th) {
+      const V = Math.max(1, Math.ceil((th.length - 1) / 2));
+      const K = th.map((a) => th.map((b) => { let s = 1; for (let v = 1; v <= V; v++) s += 2 * Math.cos(v * (a - b)); return s; }));
+      return solve(K, th.map((a) => 2 * Math.cos(a)));
+    }
+
+    // Everything that depends on the frequency grid, the depth and the cylinder, per unit incident amplitude at the axis.
+    function hydrodynamics(tp, h, D) {
+      const dt = tp / PER_PEAK, df = 1 / (N * dt), fp = 1 / tp, a = D / 2, S1 = jonswap(1, tp, GAMMA), peak = S1(fp);
+      const bins = [];
+      for (let j = 1; j < N / 2 && j * df <= 4 * fp; j++) {
+        const f = j * df, s = S1(f);
+        if (s < 1e-4 * peak) continue;
+        const w = 2 * Math.PI * f, mf = macCamyFuchs(2, 1 / f, h, D, RHO), rad = surgeRadiation(w, h, a, RHO, MODES);
+        bins.push({ j, w, s, runup: mf.runup, rc: runupCoefficients(mf.ka), fex: mf.force, fR: rad.fR, eR: rad.eR, A: rad.addedMass, B: rad.damping,
+          G: (-Math.PI * RHO * G * a * Math.tanh(mf.kh)) / mf.k });
+      }
+      // Angular modes kept for drawing the waterline; higher ones are negligible at the drawn scale.
+      const modes = Math.min(MAX_MODES, Math.max(...bins.map((b) => b.rc.length)));
+      const cosTab = new Float64Array(CURVE * modes);
+      for (let i = 0; i < CURVE; i++) for (let m = 0; m < modes; m++) cosTab[i * modes + m] = Math.cos((m * 2 * Math.PI * i) / CURVE);
+      return { key: `${tp}|${h}|${D}`, h, a, dt, df, bins, modes, cosTab };
+    }
+
+    // Time series of one record: η = Re[q e^{−iωt}] goes into FFT bins as conj(q)/2 at +ω and q/2 at −ω.
+    const spectrum = () => ({ re: new Float64Array(N), im: new Float64Array(N) });
+    const put = (s, j, q) => { s.re[j] = q[0] / 2; s.im[j] = -q[1] / 2; s.re[N - j] = q[0] / 2; s.im[N - j] = q[1] / 2; };
+    const series = (s) => { fft(s.re, s.im, true); return s.re; };
+
+    function compute() {
+      const tp = Tp.get(), h = Dp.get(), D = Dc.get(), hs = Hs.get(), W = Math.round(Wn.get()), tn = Tn.get();
+      if (!hydro || hydro.key !== `${tp}|${h}|${D}`) hydro = hydrodynamics(tp, h, D);
+      const { bins, a, dt, df } = hydro;
+      const M = RHO * Math.PI * a * a * h, K = 2 * M * ((2 * Math.PI) / tn) ** 2;
+      const th = pointAngles(W), c = weights(th), cCos = c.reduce((s, cw, w) => s + cw * Math.cos(th[w]), 0);
+      const rand = random(seed), phase = new Float64Array(N / 2);
+      for (let j = 1; j < N / 2; j++) phase[j] = 2 * Math.PI * rand();
+      const sF = spectrum(), sWith = spectrum(), sWithout = spectrum(), sX = spectrum();
+      const sPts = th.map(spectrum), sMode = Array.from({ length: hydro.modes }, spectrum);
+      for (const b of bins) {
+        const amp = hs * Math.sqrt(2 * b.s * df), q = [amp * Math.cos(phase[b.j]), -amp * Math.sin(phase[b.j])]; // a e^{−iφ}
+        const X = cmul(q, cdiv(b.fex, [K - b.w * b.w * (M + b.A), -b.w * b.B]));
+        const U = [b.w * X[1], -b.w * X[0]]; // −iωX
+        const eRU = cmul(b.eR, U);
+        let sum = [0, 0];
+        th.forEach((tw, w) => {
+          const eta = add(cmul(q, b.runup(tw)), scale(eRU, Math.cos(tw)));
+          put(sPts[w], b.j, eta); sum = add(sum, scale(eta, c[w]));
+        });
+        const without = scale(sum, b.G);
+        put(sF, b.j, add(cmul(q, b.fex), cmul(b.fR, U)));
+        put(sWithout, b.j, without);
+        put(sWith, b.j, add(without, cmul(add(b.fR, scale(b.eR, -b.G * cCos)), U)));
+        put(sX, b.j, X);
+        // Waterline as a cosine series in θ: the run-up modes, plus the radiated wave in the cos θ mode.
+        for (let m = 0; m < Math.min(b.rc.length, hydro.modes); m++) put(sMode[m], b.j, m === 1 ? add(cmul(q, b.rc[1]), eRU) : cmul(q, b.rc[m]));
+      }
+      rec = { dt, W, th, F: series(sF), with: series(sWith), without: series(sWithout), x: series(sX), pts: sPts.map(series), modes: sMode.map(series), hs };
+      // Errors over the whole record, normalised by the range of the exact force as in the papers.
+      let lo = Infinity, hi = -Infinity, e1 = 0, e2 = 0, xx = 0, fmax = 0, emax = 0, xmax = 0;
+      for (let n = 0; n < N; n++) {
+        const f = rec.F[n];
+        lo = Math.min(lo, f); hi = Math.max(hi, f); fmax = Math.max(fmax, Math.abs(f));
+        e1 += (rec.with[n] - f) ** 2; e2 += (rec.without[n] - f) ** 2; xx += rec.x[n] ** 2; xmax = Math.max(xmax, Math.abs(rec.x[n]));
+        for (const p of rec.pts) emax = Math.max(emax, Math.abs(p[n]));
+      }
+      const range = hi - lo, sigmaX = Math.sqrt(xx / N);
+      rec.errWith = Math.sqrt(e1 / N) / range; rec.errWithout = Math.sqrt(e2 / N) / range; rec.sigmaX = sigmaX;
+      rec.unit = fmax >= 1e6 ? ['MN', 1e6] : fmax >= 1e3 ? ['kN', 1e3] : ['N', 1];
+      axes.win = steadySpan(axes.win, tp, { target: 16, min: 12, max: 24, mantissas: FINE_STEPS });
+      axes.F = steadySpan(axes.F, fmax / rec.unit[1], { target: 1.1, min: 1, max: 2.5, mantissas: FINE_STEPS });
+      axes.eta = steadySpan(axes.eta, emax, { target: 1.1, min: 1, max: 2.5, mantissas: FINE_STEPS });
+      axes.x = steadySpan(axes.x, xmax, { target: 1.1, min: 1, max: 2.5, mantissas: FINE_STEPS });
+      // Magnify the drawn motion so that it is visible, but never beyond half the radius at three standard deviations.
+      rec.magnify = [10, 5, 3, 2].find((m) => 3 * sigmaX * m <= 0.5 * a) ?? 1;
+      metrics(tp, h, D, hs, W, fmax);
+      [planPlot, recordPlot, forcePlot].forEach((p) => p.redraw());
+      frame(clock ? clock.time : 0);
+    }
+
+    function metrics(tp, h, D, hs, W, fmax) {
+      const set = (id, v) => richText(document.getElementById(id), v);
+      const kp = waveNumber((2 * Math.PI) / tp, h), Lp = (2 * Math.PI) / kp;
+      set('m-eb', fmt(100 * rec.errWith, 3)); set('m-eb-sub', t.pointsSub(W));
+      set('m-ea', fmt(100 * rec.errWithout, 3)); set('m-ea-sub', t.withoutSub);
+      set('m-x', fmt(rec.sigmaX, 3)); set('m-x-sub', t.motionSub(fmt(rec.sigmaX / hs, 3)));
+      set('m-F', fmt(fmax / rec.unit[1], 3)); document.getElementById('m-F-unit').textContent = rec.unit[0];
+      set('m-F-sub', t.recordSub(Math.round((N * rec.dt) / tp)));
+      set('m-DL', fmt(D / Lp, 3)); set('m-DL-sub', `$k_pa = ${fmt((kp * D) / 2, 3)}$`);
+      set('m-L', fmt(Lp, 4)); set('m-L-sub', `$h/L_p = ${fmt(h / Lp, 3)}$ · ${t[depthClass(h / Lp)]}`);
+      richText(document.getElementById('plan-foot'), t.planFoot(rec.magnify));
+      document.getElementById('record-note').textContent = t.recordNote(label(axes.eta), label(axes.x));
+      const steep = hs / Lp > 0.04 || hs / h > 0.4, v = document.getElementById('validity');
+      v.className = 'validity' + (steep ? ' caution' : '');
+      v.textContent = steep ? t.caution : t.linear; v.title = steep ? t.cautionTitle : t.linearTitle;
+    }
+
+    // Value of a periodic record at a fractional sample position.
+    const at = (s, pos) => { const i = Math.floor(pos), f = pos - i, n = s.length, i0 = ((i % n) + n) % n; return s[i0] * (1 - f) + s[(i0 + 1) % n] * f; };
+
+    // ----- Plan view: the cylinder in surge, the surface along its waterline and the points -----
+    // The elevation is a curve about a still-water circle outside the cylinder, so that the troughs stay clear of it;
+    // the whole drawing moves with the cylinder. The curve is summed from the angular modes at 1° steps.
+    const capped = (eta) => Math.max(-2.2, Math.min(2.2, eta));
+    const planEl = document.getElementById('plan');
+    const PLAN_H = 270;
+    let plan = null;
+    const planPlot = responsive(planEl, PLAN_H, (w) => {
+      planEl.replaceChildren();
+      if (!rec) return;
+      // R cylinder, R0 still water, S drawn displacement per unit of η/(H_s/2); R0 − 2.2 S stays outside R.
+      const R = Math.min(56, w * 0.15), R0 = 1.36 * R, S = 0.12 * R, outer = R0 + 2.2 * S, cx = w / 2 + 12, cy = 136;
+      const g = node('g', {}, planEl);
+      node('line', { x1: 8, x2: 46, y1: 26, y2: 26, stroke: '#5a6c69', 'stroke-width': 1.4 }, g);
+      node('path', { d: 'M46,21 L55,26 L46,31 Z', fill: '#5a6c69' }, g);
+      text(g, 30, 16, t.waves, { 'text-anchor': 'middle' });
+      const body = node('g', {}, g);
+      node('circle', { cx, cy, r: R, fill: '#e3e8e5', stroke: '#9aa8a3', 'stroke-width': 1 }, body);
+      node('circle', { cx, cy, r: R0, fill: 'none', stroke: '#9aa8a3', 'stroke-width': 1, 'stroke-dasharray': '3 3' }, body);
+      const line = node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 2 }, body);
+      const dots = rec.th.map((th) => {
+        // angle from the front point, as in the records
+        text(body, cx + (outer + 13) * Math.cos(th), cy - (outer + 13) * Math.sin(th) + 4, `${Math.round((((Math.PI - th) * 180) / Math.PI + 360) % 360)}°`, { 'text-anchor': 'middle' });
+        return node('circle', { r: 5.5, fill: '#183846', stroke: '#ffffff', 'stroke-width': 2 }, body);
+      });
+      plan = { body, line, dots, cx, cy, R0, S, px: (R / hydro.a) * rec.magnify, limit: Math.max(0, Math.min(cx - outer - 62, w - cx - outer - 8)) };
+    });
+    function drawPlan(pos) {
+      if (!plan) return;
+      const { cx, cy, R0, S } = plan, half = rec.hs / 2;
+      const dx = Math.max(-plan.limit, Math.min(plan.limit, at(rec.x, pos) * plan.px));
+      plan.body.setAttribute('transform', `translate(${dx.toFixed(2)},0)`);
+      const xs = [], ys = [];
+      const nm = rec.modes.length, coef = rec.modes.map((s) => at(s, pos) / half), tab = hydro.cosTab;
+      for (let i = 0; i < CURVE; i++) {
+        let e = 0;
+        for (let m = 0; m < nm; m++) e += coef[m] * tab[i * nm + m];
+        const th = (2 * Math.PI * i) / CURVE, r = R0 + S * capped(e);
+        xs.push(cx + r * Math.cos(th)); ys.push(cy - r * Math.sin(th));
+      }
+      plan.line.setAttribute('d', `${path(xs, ys)}Z`);
+      plan.dots.forEach((el, w) => {
+        const th = rec.th[w], r = R0 + S * capped(at(rec.pts[w], pos) / half);
+        el.setAttribute('cx', (cx + r * Math.cos(th)).toFixed(1)); el.setAttribute('cy', (cy - r * Math.sin(th)).toFixed(1));
+      });
+    }
+
+    // ----- Axes shared by the two time plots: time runs from −window to now (0) -----
+    const M = { left: 52, right: 14, top: 24, bottom: 40 };
+    function timeAxes(svg, w, height, yticks, ylabel, rows = false) {
+      svg.replaceChildren();
+      const root = node('g', {}, svg);
+      const pw = w - M.left - M.right, ph = height - M.top - M.bottom, win = axes.win;
+      const X = (tau) => M.left + (1 + tau / win) * pw;
+      ticks(win, 4).values.forEach((v) => { node('line', { x1: X(-v), x2: X(-v), y1: M.top, y2: M.top + ph, class: 'grid' }, root); text(root, X(-v), height - 21, label(-v), { 'text-anchor': 'middle' }); });
+      if (!rows) yticks.forEach(([v, s, y]) => { node('line', { x1: M.left, x2: M.left + pw, y1: y, y2: y, class: 'grid' }, root); text(root, M.left - 6, y + 4, s, { 'text-anchor': 'end' }); });
+      node('line', { x1: M.left, x2: M.left + pw, y1: M.top + ph, y2: M.top + ph, class: 'axis' }, root);
+      node('line', { x1: M.left, x2: M.left, y1: M.top, y2: M.top + ph, class: 'axis' }, root);
+      mathText(root, M.left + pw, height - 5, '$t$ (s)', { 'text-anchor': 'end', class: 'label' });
+      if (ylabel) mathText(root, 4, M.top - 10, ylabel, { class: 'label' });
+      return { root, X, pw, ph };
+    }
+    // Path of a record over the window ending now, thinned to at most about 360 points.
+    function trace(s, X, Y, pos) {
+      const span = axes.win / rec.dt, step = Math.max(1, Math.ceil(span / 360)), xs = [], ys = [];
+      for (let n = Math.ceil(pos - span); n <= pos; n += step) { xs.push(X((n - pos) * rec.dt)); ys.push(Y(at(s, n))); }
+      xs.push(X(0)); ys.push(Y(at(s, pos)));
+      return path(xs, ys);
+    }
+
+    // Records: one row per point, plus the surge at the bottom.
+    const recordEl = document.getElementById('records');
+    const RECORD_H = 300;
+    let rows = null;
+    const recordPlot = responsive(recordEl, RECORD_H, (w) => {
+      if (!rec) return;
+      const f = timeAxes(recordEl, w, RECORD_H, [], null, true), n = rec.W + 1, rh = f.ph / n;
+      rows = rec.th.map((th, r) => {
+        const y0 = M.top + rh * (r + 0.5);
+        node('line', { x1: M.left, x2: M.left + f.pw, y1: y0, y2: y0, class: 'grid' }, f.root);
+        text(f.root, M.left - 6, y0 + 4, `${Math.round((((Math.PI - th) * 180) / Math.PI + 360) % 360)}°`, { 'text-anchor': 'end' });
+        return { s: rec.pts[r], Y: (v) => y0 - (v / axes.eta) * rh * 0.48, el: node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 1.2 }, f.root) };
+      });
+      const yx = M.top + rh * (n - 0.5);
+      node('line', { x1: M.left, x2: M.left + f.pw, y1: yx, y2: yx, class: 'grid' }, f.root);
+      mathText(f.root, M.left - 6, yx + 4, '$x$', { 'text-anchor': 'end' });
+      rows.push({ s: rec.x, Y: (v) => yx - (v / axes.x) * rh * 0.48, el: node('path', { fill: 'none', stroke: '#183846', 'stroke-width': 1.4 }, f.root) });
+      rows.X = f.X;
+    });
+    function drawRecords(pos) { if (rows) rows.forEach((r) => r.el.setAttribute('d', trace(r.s, rows.X, r.Y, pos))); }
+
+    // Force: exact, identified with the motion, identified from the surface alone.
+    const forceEl = document.getElementById('force');
+    const FORCE_H = 300;
+    let lines = null;
+    const forcePlot = responsive(forceEl, FORCE_H, (w) => {
+      if (!rec) return;
+      const ymax = axes.F, ph = FORCE_H - M.top - M.bottom, Y = (v) => M.top + (0.5 - v / rec.unit[1] / (2 * ymax)) * ph;
+      const half = ticks(ymax, 3).values, yticks = [...half.slice(1).map((v) => -v).reverse(), ...half].map((v) => [v, label(v), M.top + (0.5 - v / (2 * ymax)) * ph]);
+      const f = timeAxes(forceEl, w, FORCE_H, yticks, `$F$ (${rec.unit[0]})`);
+      lines = { X: f.X, Y,
+        without: node('path', { fill: 'none', stroke: '#8b9a96', 'stroke-width': 1.8, 'stroke-dasharray': '2 3' }, f.root),
+        exact: node('path', { fill: 'none', stroke: '#216b68', 'stroke-width': 2 }, f.root),
+        with: node('path', { fill: 'none', stroke: '#b0723a', 'stroke-width': 2, 'stroke-dasharray': '6 4' }, f.root) };
+    });
+    function drawForce(pos) {
+      if (!lines) return;
+      lines.without.setAttribute('d', trace(rec.without, lines.X, lines.Y, pos));
+      lines.exact.setAttribute('d', trace(rec.F, lines.X, lines.Y, pos));
+      lines.with.setAttribute('d', trace(rec.with, lines.X, lines.Y, pos));
+    }
+
+    function frame(time) { if (!rec) return; const pos = time / rec.dt; drawPlan(pos); drawRecords(pos); drawForce(pos); }
+    clock = playback(document.getElementById('play'), t, frame);
+    const all = [Hs, Tp, Dp, Dc, Wn, Tn];
+    document.getElementById('reseed').addEventListener('click', () => { seed += 1; compute(); });
+    document.getElementById('reset').addEventListener('click', () => { all.forEach((s, i) => s.set(DEFAULTS[i])); seed = 2026; axes = {}; compute(); clock.reset(); });
+    all.forEach((s, i) => s.set(DEFAULTS[i]));
+    compute();
+  </script>
+</body>
+</html>

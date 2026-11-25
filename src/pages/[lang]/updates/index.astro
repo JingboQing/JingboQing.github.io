@@ -1,0 +1,17 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import PostList from '../../../components/PostList.astro';
+import { languages, posts, text, type Lang } from '../../../lib/site';
+import { categories } from '../../../lib/categories';
+export function getStaticPaths() { return languages.map(lang => ({ params: { lang } })); }
+const lang = Astro.params.lang as Lang;
+// Grouped by category in the order of categories.ts (research first, then news, then resources); newest first within each.
+const rank = (type: string) => categories.findIndex(c => c.id === type);
+const entries = (await posts(lang)).sort((a, b) => rank(a.data.type) - rank(b.data.type) || b.data.date.valueOf() - a.data.date.valueOf() || a.id.localeCompare(b.id));
+---
+<Layout lang={lang} active="updates" alternate={`/${lang === 'zh' ? 'en' : 'zh'}/updates/`} title={text(lang, '研究与动态 · 卿景博', 'Research & updates · Jingbo Qing')} description={text(lang, '研究工作、学术动态与开放资源。', 'Research projects, academic news, and open resources.')}>
+  <div class="page-wrap archive-page">
+    <header class="page-intro"><h1>{text(lang, '研究与动态', 'Research & updates')}</h1><p>{text(lang, '记录研究工作的思路与进展，分享学术交流和可复用的资源。', 'Research in more detail, notes from academic life, and resources to explore.')}</p></header>
+    <PostList entries={entries} lang={lang} />
+  </div>
+</Layout>
