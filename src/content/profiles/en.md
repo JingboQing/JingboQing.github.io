@@ -10,7 +10,7 @@ researchAreas:
   - Wave load identification
   - Wave and flow field inversion and uncertainty
 email: jingboqing@163.com
-scholar: https://scholar.google.com/citations?user=lIBSMXsAAAAJ
+scholar: https://scholar.google.com/citations?user=emiO1m4AAAAJ
 orcid: https://orcid.org/0009-0009-1505-8452
 github: https://github.com/JingboQing
 researchgate: https://www.researchgate.net/profile/Jingbo-Qing

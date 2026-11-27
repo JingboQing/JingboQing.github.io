@@ -10,7 +10,7 @@ researchAreas:
   - 波浪荷载识别
   - 波流场反演与不确定性
 email: jingboqing@163.com
-scholar: https://scholar.google.com/citations?user=lIBSMXsAAAAJ
+scholar: https://scholar.google.com/citations?user=emiO1m4AAAAJ
 orcid: https://orcid.org/0009-0009-1505-8452
 github: https://github.com/JingboQing
 researchgate: https://www.researchgate.net/profile/Jingbo-Qing
